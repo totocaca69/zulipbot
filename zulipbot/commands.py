@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 from .msg import *
 
 
@@ -34,3 +35,22 @@ class ZulipBotCmdCoucou(ZulipBotCmdBase):
 
     def process(self, msg:ZulipMsg):
         msg.reply("coucou")
+
+
+class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
+    def __init__(self):
+        super().__init__("gnagnagna", "[@**Name** | off] reply 'gnagnagna' everytime @**Name** talks")
+        self.full_name = "off"
+
+    def is_to_be_processed(self, msg:ZulipMsg):
+        return msg.is_to_be_processed()
+
+    def process(self, msg:ZulipMsg):
+        if msg.cmd_is_to_be_processed(self.cmd_name):
+            m = re.match(r".* @\*\*(.*)\*\*", msg.msg['content'])
+            if m:
+                self.full_name = m.group(1)
+            else:
+                self.full_name = 'off'
+        elif msg.msg['sender_full_name'] == self.full_name:
+            msg.reply("gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))

@@ -9,4 +9,5 @@ client = Client(config_file="./zuliprc")
 
 bot = ZulipBot(client)
 bot.add_cmd(ZulipBotCmdCoucou())
+bot.add_cmd(ZulipBotCmdGnagnagna())
 bot.run()
