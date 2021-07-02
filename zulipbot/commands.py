@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import re
+
 from .msg import *
 
 
@@ -9,10 +10,10 @@ class ZulipBotCmdBase(object):
         self.cmd_name = cmd_name
         self.help = help
 
-    def is_to_be_processed(self, msg:ZulipMsg):
+    def is_to_be_processed(self, msg: ZulipMsg):
         return msg.is_valid_cmd(self.cmd_name)
 
-    def process(self, msg:ZulipMsg):
+    def process(self, msg: ZulipMsg):
         print(msg)
         return
 
@@ -22,7 +23,7 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         super().__init__("help", "display this help")
         self.cmds = cmds
 
-    def process(self, msg:ZulipMsg):
+    def process(self, msg: ZulipMsg):
         help_list = []
         for cmd in self.cmds:
             help_list.append("!{:10s} : {}".format(cmd.cmd_name, cmd.help))
@@ -33,19 +34,20 @@ class ZulipBotCmdCoucou(ZulipBotCmdBase):
     def __init__(self):
         super().__init__("coucou", "reply 'coucou'")
 
-    def process(self, msg:ZulipMsg):
+    def process(self, msg: ZulipMsg):
         msg.reply("coucou")
 
 
 class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
     def __init__(self):
-        super().__init__("gnagnagna", "[@**Name** | off] reply 'gnagnagna' everytime @**Name** talks")
+        super().__init__("gnagnagna",
+                         "[@**Name** | off] reply 'gnagnagna' everytime @**Name** talks")
         self.full_name = "off"
 
-    def is_to_be_processed(self, msg:ZulipMsg):
+    def is_to_be_processed(self, msg: ZulipMsg):
         return msg.is_valid()
 
-    def process(self, msg:ZulipMsg):
+    def process(self, msg: ZulipMsg):
         if msg.is_valid_cmd(self.cmd_name):
             m = re.match(r".* @\*\*(.*)\*\*", msg.msg['content'])
             if m:
@@ -53,4 +55,5 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
             else:
                 self.full_name = 'off'
         elif msg.msg['sender_full_name'] == self.full_name:
-            msg.reply("gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))
+            msg.reply(
+                "gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))

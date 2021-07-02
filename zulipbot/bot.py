@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from zulipbot.msg import *
 from zulipbot.commands import *
+from zulipbot.msg import *
 
 
 class ZulipBot(object):
