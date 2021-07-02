@@ -7,18 +7,23 @@ class ZulipMsg(object):
     robot_prefix = ":robot:"
     cmd_prefix = "!"
 
-    def __init__(self, client, msg):
+    def __init__(self, client, msg_filter, msg):
         self.client = client
+        self.msg_filter = msg_filter
         self.msg = msg
 
-    def is_to_be_processed(self):
-        return self.msg['content'].split()[0] != self.robot_prefix and \
-            self.msg['type'] == 'private' and \
-            self.msg['display_recipient'][0]['short_name'] == 'antoine.madec'
+    def is_valid(self):
+        not_a_robot = self.msg['content'].split()[0] != self.robot_prefix
+        valid = True
+        for key in self.msg_filter.keys():
+            if key not in self.msg.keys() or self.msg[key] != self.msg_filter[key]:
+                valid = False
+                break
+        return not_a_robot and valid
 
-    def cmd_is_to_be_processed(self, cmd_name):
+    def is_valid_cmd(self, cmd_name):
         first_word = self.msg['content'].split()[0]
-        return self.is_to_be_processed() and \
+        return self.is_valid() and \
             first_word[0] == self.cmd_prefix and first_word[1:] == cmd_name
 
     def reply(self, txt, fenced_code_block=True):

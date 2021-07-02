@@ -10,7 +10,7 @@ class ZulipBotCmdBase(object):
         self.help = help
 
     def is_to_be_processed(self, msg:ZulipMsg):
-        return msg.cmd_is_to_be_processed(self.cmd_name)
+        return msg.is_valid_cmd(self.cmd_name)
 
     def process(self, msg:ZulipMsg):
         print(msg)
@@ -43,10 +43,10 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
         self.full_name = "off"
 
     def is_to_be_processed(self, msg:ZulipMsg):
-        return msg.is_to_be_processed()
+        return msg.is_valid()
 
     def process(self, msg:ZulipMsg):
-        if msg.cmd_is_to_be_processed(self.cmd_name):
+        if msg.is_valid_cmd(self.cmd_name):
             m = re.match(r".* @\*\*(.*)\*\*", msg.msg['content'])
             if m:
                 self.full_name = m.group(1)
