@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import random
 import re
 
 from .msg import *
@@ -57,3 +58,20 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
         elif msg.msg['sender_full_name'] == self.full_name:
             msg.reply(
                 "gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))
+
+
+class ZulipBotCmdJoke(ZulipBotCmdBase):
+    def __init__(self, reddit):
+        super().__init__("joke", "get joke from reddit's r/dadjokes")
+        self.reddit = reddit
+        self.reddit.read_only = True
+
+    def process(self, msg: ZulipMsg):
+        subreddit = self.reddit.subreddit("dadjokes")
+        idx = random.randint(0, 99)
+        post = None
+        # ugly as fuck
+        for post in subreddit.hot(limit=idx):
+            pass
+        if post:
+            msg.reply("{}\n{}".format(post.title, post.selftext))
