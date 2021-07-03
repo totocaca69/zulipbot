@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import json
-import sys
 import os.path
+import sys
 
 import praw
 from zulip import Client

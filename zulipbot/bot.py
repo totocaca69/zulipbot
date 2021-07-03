@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import zulip
+
 from zulipbot.commands import *
 from zulipbot.msg import *
 
@@ -7,13 +9,13 @@ from zulipbot.msg import *
 class ZulipBot(object):
     """get messages, process, reply"""
 
-    def __init__(self, client, msg_filter):
+    def __init__(self, client: zulip.Client, msg_filter: dict):
         self.client = client
         self.msg_filter = msg_filter
-        self.cmds = []
+        self.cmds: list[ZulipBotCmdBase] = []
         self.add_cmd(ZulipBotCmdHelp(self.cmds))
 
-    def add_cmd(self, cmd):
+    def add_cmd(self, cmd: ZulipBotCmdBase):
         self.cmds.append(cmd)
 
     def run_callback(self, m):

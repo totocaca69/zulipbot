@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 
-import random
 import re
+
+from praw import Reddit, models
 
 from .msg import *
 
 
+# --------------------------------------------------------------
+# base clases
+# --------------------------------------------------------------
 class ZulipBotCmdBase(object):
-    def __init__(self, cmd_name, help):
+    def __init__(self, cmd_name: str, help: str):
         self.cmd_name = cmd_name
         self.help = help
 
-    def is_to_be_processed(self, msg: ZulipMsg):
+    def is_to_be_processed(self, msg: ZulipMsg) -> bool:
         return msg.is_valid_cmd(self.cmd_name)
 
     def process(self, msg: ZulipMsg):
@@ -19,8 +23,28 @@ class ZulipBotCmdBase(object):
         return
 
 
+class ZulipBotCmdRedditBase(ZulipBotCmdBase):
+    def __init__(self, reddit: Reddit, cmd_name: str, help: str):
+        super().__init__(cmd_name, help)
+        self.reddit = reddit
+        self.reddit.read_only = True
+
+    def get_random_rising_submission(self, subreddit_name: str) -> models.Submission:
+        subreddit = self.reddit.subreddit(subreddit_name)
+        for submission in subreddit.random_rising(limit=1):
+            return submission
+        return models.Submission(reddit=self.reddit)
+
+    def process(self, msg: ZulipMsg):
+        print(msg)
+        return
+
+
+# --------------------------------------------------------------
+# command classes
+# --------------------------------------------------------------
 class ZulipBotCmdHelp(ZulipBotCmdBase):
-    def __init__(self, cmds):
+    def __init__(self, cmds: list[ZulipBotCmdBase]):
         super().__init__("help", "display this help")
         self.cmds = cmds
 
@@ -60,18 +84,10 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
                 "gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))
 
 
-class ZulipBotCmdJoke(ZulipBotCmdBase):
+class ZulipBotCmdJoke(ZulipBotCmdRedditBase):
     def __init__(self, reddit):
-        super().__init__("joke", "get joke from reddit's r/dadjokes")
-        self.reddit = reddit
-        self.reddit.read_only = True
+        super().__init__(reddit, "joke", "get joke from reddit's r/dadjokes")
 
     def process(self, msg: ZulipMsg):
-        subreddit = self.reddit.subreddit("dadjokes")
-        idx = random.randint(0, 99)
-        post = None
-        # ugly as fuck
-        for post in subreddit.hot(limit=idx):
-            pass
-        if post:
-            msg.reply("{}\n{}".format(post.title, post.selftext))
+        post = self.get_random_rising_submission("dadjokes")
+        msg.reply("{}\n{}".format(post.title, post.selftext))

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import zulip
+
 
 class ZulipMsg(object):
     """message functions"""
@@ -7,12 +9,12 @@ class ZulipMsg(object):
     robot_prefix = ":robot:"
     cmd_prefix = "!"
 
-    def __init__(self, client, msg_filter, msg):
+    def __init__(self, client: zulip.Client, msg_filter: dict, msg: dict):
         self.client = client
         self.msg_filter = msg_filter
         self.msg = msg
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         not_a_robot = self.msg['content'].split()[0] != self.robot_prefix
         valid = True
         for key in self.msg_filter.keys():
@@ -21,12 +23,12 @@ class ZulipMsg(object):
                 break
         return not_a_robot and valid
 
-    def is_valid_cmd(self, cmd_name):
+    def is_valid_cmd(self, cmd_name) -> bool:
         first_word = self.msg['content'].split()[0]
         return self.is_valid() and \
             first_word[0] == self.cmd_prefix and first_word[1:] == cmd_name
 
-    def reply(self, txt, fenced_code_block=True):
+    def reply(self, txt: str, fenced_code_block: bool = True):
         if self.msg["type"] == "private":
             rep = {"type": "private",
                    "to": [x["id"] for x in self.msg["display_recipient"]]
