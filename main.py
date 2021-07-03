@@ -28,7 +28,7 @@ assert_file_exists("./zuliprc")
 assert_file_exists("./praw.ini")
 assert_file_exists("./msg_filter.json")
 client = Client(config_file="./zuliprc")
-reddit = praw.Reddit("bot1")
+reddit = praw.Reddit("zulipbot")
 with open('./msg_filter.json') as f:
     msg_filter = json.load(f)
 
