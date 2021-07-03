@@ -13,9 +13,10 @@ from .msg import *
 # base clases
 # --------------------------------------------------------------
 class ZulipBotCmdBase(object):
-    def __init__(self, cmd_name: str, help: str):
+    def __init__(self, cmd_name: str, help: str, help_args: str = ""):
         self.cmd_name = cmd_name
         self.help = help
+        self.help_args = help_args
 
     def is_to_be_processed(self, msg: ZulipMsg) -> bool:
         return msg.is_valid_cmd(self.cmd_name)
@@ -26,8 +27,8 @@ class ZulipBotCmdBase(object):
 
 
 class ZulipBotCmdRedditBase(ZulipBotCmdBase):
-    def __init__(self, reddit: Reddit, cmd_name: str, help: str):
-        super().__init__(cmd_name, help)
+    def __init__(self, reddit: Reddit, cmd_name: str, help: str, help_args: str = ""):
+        super().__init__(cmd_name, help, help_args=help_args)
         self.reddit = reddit
         self.reddit.read_only = True
 
@@ -68,7 +69,7 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
     def process(self, msg: ZulipMsg):
         help_list = []
         for cmd in self.cmds:
-            help_list.append("!{:10s} : {}".format(cmd.cmd_name, cmd.help))
+            help_list.append("!{:10s} {:20s} : {}".format(cmd.cmd_name, cmd.help_args, cmd.help))
         msg.reply("\n".join(sorted(help_list)))
 
 
@@ -83,7 +84,8 @@ class ZulipBotCmdCoucou(ZulipBotCmdBase):
 class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
     def __init__(self):
         super().__init__("gnagnagna",
-                         "[@**Name** | off] reply 'gnagnagna' everytime @**Name** talks")
+                         "reply 'gnagnagna' everytime someone talks",
+                         help_args="[@**someone** | off]")
         self.full_name = "off"
 
     def is_to_be_processed(self, msg: ZulipMsg):
