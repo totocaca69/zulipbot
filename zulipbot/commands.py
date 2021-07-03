@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import asyncio
 import random
 import re
 import typing
 
 from praw import Reddit, models
+import python_weather
 
 from .msg import *
 
@@ -59,7 +61,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
 
 
 # --------------------------------------------------------------
-# command classes
+# command classes: misc
 # --------------------------------------------------------------
 class ZulipBotCmdHelp(ZulipBotCmdBase):
     def __init__(self, cmds: list[ZulipBotCmdBase]):
@@ -69,7 +71,8 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
     def process(self, msg: ZulipMsg):
         help_list = []
         for cmd in self.cmds:
-            help_list.append("!{:10s} {:20s} : {}".format(cmd.cmd_name, cmd.help_args, cmd.help))
+            help_list.append("!{:10s} {:20s} : {}".format(
+                cmd.cmd_name, cmd.help_args, cmd.help))
         msg.reply("\n".join(sorted(help_list)))
 
 
@@ -103,6 +106,26 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
                 "gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))
 
 
+class ZulipBotCmdWeather(ZulipBotCmdBase):
+    def __init__(self):
+        super().__init__("weather", "print current weather")
+
+    async def print_weather(self, msg: ZulipMsg, city: str = "Rennes, Brittany, France"):
+        client = python_weather.Client()
+        weather = await client.find(city)
+        cw = weather.current
+        msg.reply("{}\n  temp: {}c\n  feels_like: {}c\n  humidity: {}%\n  sky: {}\n  wind: {}".format(
+            cw.observation_point, cw.temperature, cw.feels_like, cw.humidity, cw.sky_text, cw.wind_display))
+        await client.close()
+
+    def process(self, msg: ZulipMsg):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.print_weather(msg))
+
+
+# --------------------------------------------------------------
+# command classes: reddit
+# --------------------------------------------------------------
 class ZulipBotCmdJoke(ZulipBotCmdRedditBase):
     def __init__(self, reddit):
         super().__init__(reddit, "joke", "joke from reddit r/dadjokes")

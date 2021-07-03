@@ -35,6 +35,7 @@ with open('./msg_filter.json') as f:
 bot = ZulipBot(client, msg_filter)
 bot.add_cmd(ZulipBotCmdCoucou())
 bot.add_cmd(ZulipBotCmdGnagnagna())
+bot.add_cmd(ZulipBotCmdWeather())
 bot.add_cmd(ZulipBotCmdJoke(reddit))
 bot.add_cmd(ZulipBotCmdAww(reddit))
 bot.add_cmd(ZulipBotCmdEarth(reddit))
