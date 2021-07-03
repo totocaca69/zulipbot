@@ -1,3 +1,4 @@
 zuliprc
 praw.ini
+msg_filter*.json
 __pycache__
