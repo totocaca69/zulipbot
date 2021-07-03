@@ -28,7 +28,7 @@ class ZulipMsg(object):
         return self.is_valid() and \
             first_word[0] == self.cmd_prefix and first_word[1:] == cmd_name
 
-    def reply(self, txt: str, fenced_code_block: bool = True):
+    def reply(self, txt: str, fenced_code_block: bool = True, is_error: bool = False):
         if self.msg["type"] == "private":
             rep = {"type": "private",
                    "to": [x["id"] for x in self.msg["display_recipient"]]
@@ -40,6 +40,8 @@ class ZulipMsg(object):
                    }
         else:
             return
+        if is_error:
+            txt = "ERROR: {}".format(txt)
         if fenced_code_block:
             txt = "```\n{}\n```".format(txt)
         rep["content"] = "{}\n{}".format(self.robot_prefix, txt)
