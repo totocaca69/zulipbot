@@ -35,11 +35,23 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         self.reddit.read_only = True
         self.help_category = "reddit"
 
+    def get_msg_status(self, submission: models.Submission) -> str:
+        """return msg status with link to submission"""
+        sr_name = submission.subreddit
+        url = f"https://www.reddit.com{submission.permalink}"
+        return f"from [r/{sr_name}]({url})"
+
+    def get_subreddit_from_msg(self, msg: ZulipMsg) -> Union[str, models.Subreddit]:
+        args = msg.msg['content'].split()
+        subreddit = args[1] if len(args) > 1 else \
+            self.reddit.random_subreddit()
+        return subreddit
+
     def get_random_submission(self,
                               subreddit: Union[str, models.Subreddit],
                               limit: int = 100,
                               query: str = "",
-                              sort: str = "hot") -> Optional[models.Submission]:
+                              sort: str = "rising") -> Optional[models.Submission]:
         """Warning: this method has a timeout in-between calls. Don't use it in loops."""
         if isinstance(subreddit, str):
             subr = self.reddit.subreddit(subreddit)
@@ -59,7 +71,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         s = self.get_random_submission(subreddit, query=query)
         if s:
             msg.reply("{}\n\n{}".format(s.title, s.selftext),
-                      status_str=f"from r/{str(subreddit)}")
+                      status_str=self.get_msg_status(s))
         else:
             msg.reply(f"cannot find an media in r/{str(subreddit)}",
                       is_error=True)
@@ -72,18 +84,18 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         if s:
             msg.reply("[]({})".format(s.url),
                       fenced_code_block=False,
-                      status_str=f"from r/{str(subreddit)}")
+                      status_str=self.get_msg_status(s))
         else:
             msg.reply(f"cannot find an media in r/{str(subreddit)}",
                       is_error=True)
 
     def play_random_media_audio(self,
-                                  msg: ZulipMsg,
-                                  subreddit: Union[str, models.Subreddit],
-                                  query: str = "url:youtube"):
+                                msg: ZulipMsg,
+                                subreddit: Union[str, models.Subreddit],
+                                query: str = "url:youtube"):
         s = self.get_random_submission(subreddit, query=query)
         if s:
-            msg.reply(s.title, status_str=f"from r/{str(subreddit)}")
+            msg.reply(s.title, status_str=self.get_msg_status(s))
             AudioPlayer().play(s.url)
         else:
             msg.reply(f"cannot find an media in r/{str(subreddit)}",
@@ -185,7 +197,8 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
     def __init__(self, reddit: Optional[Reddit] = None):
-        super().__init__("play", "play audio from url or r/listentothis", help_args="[url]")
+        super().__init__(
+            "play", "play audio from url or r/listentothis", help_args="[url]")
         self.reddit_cmd = None
         if reddit:
             self.reddit_cmd = ZulipBotCmdRedditBase(reddit, '', '')
@@ -241,9 +254,7 @@ class ZulipBotCmdRedPost(ZulipBotCmdRedditBase):
                          "post from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        subreddit = args[1] if len(args) > 1 else \
-            self.reddit.random_subreddit()
+        subreddit = self.get_subreddit_from_msg(msg)
         self.reply_with_random_post(msg, subreddit)
 
 
@@ -253,9 +264,7 @@ class ZulipBotCmdRedPic(ZulipBotCmdRedditBase):
                          "picture from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        subreddit = args[1] if len(args) > 1 else \
-            self.reddit.random_subreddit()
+        subreddit = self.get_subreddit_from_msg(msg)
         self.reply_with_random_media(msg, subreddit, query="url:jpg")
 
 
@@ -265,9 +274,7 @@ class ZulipBotCmdRedGif(ZulipBotCmdRedditBase):
                          "gif from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        subreddit = args[1] if len(args) > 1 else \
-            self.reddit.random_subreddit()
+        subreddit = self.get_subreddit_from_msg(msg)
         self.reply_with_random_media(msg, subreddit, query="url:gif")
 
 
@@ -277,7 +284,5 @@ class ZulipBotCmdRedPlay(ZulipBotCmdRedditBase):
                          "play audio from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        subreddit = args[1] if len(args) > 1 else \
-            self.reddit.random_subreddit()
+        subreddit = self.get_subreddit_from_msg(msg)
         self.play_random_media_audio(msg, subreddit, query="url:youtube")
