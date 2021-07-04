@@ -18,6 +18,7 @@ class ZulipBotCmdBase(object):
         self.cmd_name = cmd_name
         self.help = help
         self.help_args = help_args
+        self.help_category = "misc"
 
     def is_to_be_processed(self, msg: ZulipMsg) -> bool:
         return msg.is_valid_cmd(self.cmd_name)
@@ -32,6 +33,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         super().__init__(cmd_name, help, help_args=help_args)
         self.reddit = reddit
         self.reddit.read_only = True
+        self.help_category = "reddit"
 
     def get_random_submission(self, subreddit_name: str,
                               limit: int = 100,
@@ -57,6 +59,13 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
     def process(self, msg: ZulipMsg):
         print(msg)
         return
+
+
+class ZulipBotCmdAudioBase(ZulipBotCmdBase):
+    def __init__(self, cmd_name: str, help: str, help_args: str = ""):
+        super().__init__(cmd_name, help, help_args=help_args)
+        self.audio = AudioPlayer()
+        self.help_category = "audio"
 
 
 # --------------------------------------------------------------
@@ -123,32 +132,32 @@ class ZulipBotCmdWeather(ZulipBotCmdBase):
         loop.run_until_complete(self.print_weather(msg))
 
 
-class ZulipBotCmdSpeak(ZulipBotCmdBase):
+# --------------------------------------------------------------
+# command classes: audio
+# --------------------------------------------------------------
+class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("speak", "speak in french", help_args="[french_text]")
-        self.language = 'fr'
 
     def process(self, msg: ZulipMsg):
         text = " ".join(msg.msg['content'].split()[1:])
-        msg.speak(text, language='fr')
+        self.audio.speak(text, language='fr')
 
 
-class ZulipBotCmdPlay(ZulipBotCmdBase):
+class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("play", "play audio", help_args="[url]")
-        self.audio = AudioPlayer()
 
     def process(self, msg: ZulipMsg):
         url = " ".join(msg.msg['content'].split()[1:])
         self.audio.play(url)
 
 
-class ZulipBotCmdStop(ZulipBotCmdBase):
+class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("stop", "stop audio")
-        self.audio = AudioPlayer()
 
-    def process(self, msg: ZulipMsg):
+    def process(self, _: ZulipMsg):
         self.audio.stop()
 
 

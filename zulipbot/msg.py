@@ -1,4 +1,3 @@
-from gtts import gTTS
 import zulip
 
 from .audio import *
@@ -14,7 +13,6 @@ class ZulipMsg(object):
         self.client = client
         self.msg_filter = msg_filter
         self.msg = msg
-        self.audio = AudioPlayer()
 
     def is_valid(self) -> bool:
         not_a_robot = self.msg['content'].split()[0] != self.robot_prefix
@@ -30,12 +28,6 @@ class ZulipMsg(object):
         return self.is_valid() and \
             first_word[0] == self.cmd_prefix and first_word[1:] == cmd_name
 
-    def speak(self, text: str, language: str = 'en'):
-        file_name = "speak.mp3"
-        myobj = gTTS(text=text, lang=language, slow=False)
-        myobj.save(file_name)
-        self.audio.play(file_name)
-
     def reply(self, txt: str,
               fenced_code_block: bool = True,
               is_error: bool = False,
@@ -44,7 +36,7 @@ class ZulipMsg(object):
         if is_error:
             txt = "ERROR: {}".format(txt)
         if speak:
-            self.speak(txt, language=speak_lang)
+            AudioPlayer().speak(txt, language=speak_lang)
         else:
             if self.msg["type"] == "private":
                 rep = {"type": "private",
