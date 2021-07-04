@@ -32,9 +32,14 @@ class ZulipMsg(object):
               fenced_code_block: bool = True,
               is_error: bool = False,
               speak: bool = False,
-              speak_lang: str = 'en'):
+              speak_lang: str = 'en',
+              status_str: str = ""):
+        prefix = self.robot_prefix
         if is_error:
-            txt = "ERROR: {}".format(txt)
+            prefix += " :danger:*ERROR*:danger:"
+        if status_str:
+            prefix += f" *{status_str}*"
+
         if speak:
             AudioPlayer().speak(txt, language=speak_lang)
         else:
@@ -51,5 +56,5 @@ class ZulipMsg(object):
                 return
             if fenced_code_block:
                 txt = "```\n{}\n```".format(txt)
-            rep["content"] = "{}\n{}".format(self.robot_prefix, txt)
+            rep["content"] = "{}\n{}".format(prefix, txt)
             self.client.send_message(rep)

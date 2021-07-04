@@ -58,7 +58,8 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
                                query: str = ""):
         s = self.get_random_submission(subreddit, query=query)
         if s:
-            msg.reply("{}\n\n{}".format(s.title, s.selftext))
+            msg.reply("{}\n\n{}".format(s.title, s.selftext),
+                      status_str=f"from r/{str(subreddit)}")
         else:
             msg.reply("cannot find an post in subreddit={}'".format(subreddit),
                       is_error=True)
@@ -69,7 +70,9 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
                                 query: str = "url:jpg"):
         s = self.get_random_submission(subreddit, query=query)
         if s:
-            msg.reply("[]({})".format(s.url), fenced_code_block=False)
+            msg.reply("[]({})".format(s.url),
+                      fenced_code_block=False,
+                      status_str=f"from r/{str(subreddit)}")
         else:
             msg.reply("cannot find an media in subreddit={}'".format(subreddit),
                       is_error=True)
