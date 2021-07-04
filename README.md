@@ -7,7 +7,7 @@
 pip3 install -r requirements.txt
 ```
 ### Progams
-  - **cvlc**: in order to play mp3
+  - **cvlc**: in order to play audio
 
 ### Setup Files
 Add the following files in this directory:

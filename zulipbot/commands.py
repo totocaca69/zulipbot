@@ -8,6 +8,7 @@ import typing
 from praw import Reddit, models
 import python_weather
 
+from .audio import *
 from .msg import *
 
 
@@ -132,6 +133,25 @@ class ZulipBotCmdSpeak(ZulipBotCmdBase):
     def process(self, msg: ZulipMsg):
         text = " ".join(msg.msg['content'].split()[1:])
         msg.speak(text, language='fr')
+
+
+class ZulipBotCmdPlay(ZulipBotCmdBase):
+    def __init__(self):
+        super().__init__("play", "play audio", help_args="[url]")
+        self.audio = AudioPlayer()
+
+    def process(self, msg: ZulipMsg):
+        url = " ".join(msg.msg['content'].split()[1:])
+        self.audio.play(url)
+
+
+class ZulipBotCmdStop(ZulipBotCmdBase):
+    def __init__(self):
+        super().__init__("stop", "stop audio")
+        self.audio = AudioPlayer()
+
+    def process(self, msg: ZulipMsg):
+        self.audio.stop()
 
 
 # --------------------------------------------------------------
