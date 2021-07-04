@@ -6,6 +6,9 @@
 ```python
 pip3 install -r requirements.txt
 ```
+### Progams
+  - **cvlc**: in order to play mp3
+
 ### Setup Files
 Add the following files in this directory:
   - **zuliprc**, used by Zulip's client. Create a section called **zulipbot**. See [Zulip documentation](https://zulip.com/api/running-bots)

@@ -115,12 +115,23 @@ class ZulipBotCmdWeather(ZulipBotCmdBase):
         weather = await client.find(city)
         cw = weather.current
         msg.reply("{}\n  temp: {}c\n  feels_like: {}c\n  humidity: {}%\n  sky: {}\n  wind: {}".format(
-            cw.observation_point, cw.temperature, cw.feels_like, cw.humidity, cw.sky_text, cw.wind_display))
+            cw.observation_point, cw.temperature, cw.feels_like,
+            cw.humidity, cw.sky_text, cw.wind_display))
         await client.close()
 
     def process(self, msg: ZulipMsg):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.print_weather(msg))
+
+
+class ZulipBotCmdSpeak(ZulipBotCmdBase):
+    def __init__(self):
+        super().__init__("speak", "speak in french", help_args="[french_text]")
+        self.language = 'fr'
+
+    def process(self, msg: ZulipMsg):
+        text = " ".join(msg.msg['content'].split()[1:])
+        msg.speak(text, language='fr')
 
 
 # --------------------------------------------------------------

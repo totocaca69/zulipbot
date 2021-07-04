@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import os
+
+from gtts import gTTS
 import zulip
 
 
@@ -28,21 +31,33 @@ class ZulipMsg(object):
         return self.is_valid() and \
             first_word[0] == self.cmd_prefix and first_word[1:] == cmd_name
 
-    def reply(self, txt: str, fenced_code_block: bool = True, is_error: bool = False):
-        if self.msg["type"] == "private":
-            rep = {"type": "private",
-                   "to": [x["id"] for x in self.msg["display_recipient"]]
-                   }
-        elif self.msg["type"] == "stream":
-            rep = {"type": "stream",
-                   "to": self.msg["display_recipient"],
-                   "topic": self.msg["subject"]
-                   }
-        else:
-            return
+    def speak(self, text: str, language: str = 'en'):
+        myobj = gTTS(text=text, lang=language, slow=False)
+        myobj.save("speak.mp3")
+        os.system("cvlc speak.mp3 --quiet --no-loop --play-and-exit&")
+
+    def reply(self, txt: str,
+              fenced_code_block: bool = True,
+              is_error: bool = False,
+              speak: bool = False,
+              speak_lang: str = 'en'):
         if is_error:
             txt = "ERROR: {}".format(txt)
-        if fenced_code_block:
-            txt = "```\n{}\n```".format(txt)
-        rep["content"] = "{}\n{}".format(self.robot_prefix, txt)
-        self.client.send_message(rep)
+        if speak:
+            self.speak(txt, language=speak_lang)
+        else:
+            if self.msg["type"] == "private":
+                rep = {"type": "private",
+                       "to": [x["id"] for x in self.msg["display_recipient"]]
+                       }
+            elif self.msg["type"] == "stream":
+                rep = {"type": "stream",
+                       "to": self.msg["display_recipient"],
+                       "topic": self.msg["subject"]
+                       }
+            else:
+                return
+            if fenced_code_block:
+                txt = "```\n{}\n```".format(txt)
+            rep["content"] = "{}\n{}".format(self.robot_prefix, txt)
+            self.client.send_message(rep)
