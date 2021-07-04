@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import zulip
 
 from zulipbot.commands import *
