@@ -1,7 +1,7 @@
 import asyncio
 import random
 import re
-import typing
+from typing import Optional, Union
 
 from praw import Reddit, models
 import python_weather
@@ -35,25 +35,43 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         self.reddit.read_only = True
         self.help_category = "reddit"
 
-    def get_random_submission(self, subreddit_name: str,
+    def get_random_submission(self,
+                              subreddit: Union[str, models.Subreddit],
                               limit: int = 100,
                               query: str = "",
-                              sort: str = "hot") -> typing.Optional[models.Submission]:
+                              sort: str = "hot") -> Optional[models.Submission]:
         """Warning: this method has a timeout in-between calls. Don't use it in loops."""
-        subreddit = self.reddit.subreddit(subreddit_name)
-        query = "nsfw:no subreddit:{} {}".format(subreddit_name, query)
+        if isinstance(subreddit, str):
+            subr = self.reddit.subreddit(subreddit)
+        else:
+            subr = subreddit
+        query = "nsfw:no subreddit:{} {}".format(str(subr), query)
         idx = random.randint(1, limit)
         submission = None
-        for submission in subreddit.search(query, sort=sort, limit=idx):
+        for submission in subr.search(query, sort=sort, limit=idx):
             pass
         return submission
 
-    def reply_with_random_media(self, msg: ZulipMsg, subreddit_name: str, query: str = "url:jpg"):
-        s = self.get_random_submission(subreddit_name, query=query)
+    def reply_with_random_post(self,
+                               msg: ZulipMsg,
+                               subreddit: Union[str, models.Subreddit],
+                               query: str = ""):
+        s = self.get_random_submission(subreddit, query=query)
+        if s:
+            msg.reply("{}\n\n{}".format(s.title, s.selftext))
+        else:
+            msg.reply("cannot find an post in subreddit={}'".format(subreddit),
+                      is_error=True)
+
+    def reply_with_random_media(self,
+                                msg: ZulipMsg,
+                                subreddit: Union[str, models.Subreddit],
+                                query: str = "url:jpg"):
+        s = self.get_random_submission(subreddit, query=query)
         if s:
             msg.reply("[]({})".format(s.url), fenced_code_block=False)
         else:
-            msg.reply("cannot find an media in subreddit={}'".format(subreddit_name),
+            msg.reply("cannot find an media in subreddit={}'".format(subreddit),
                       is_error=True)
 
     def process(self, msg: ZulipMsg):
@@ -175,9 +193,7 @@ class ZulipBotCmdJoke(ZulipBotCmdRedditBase):
         super().__init__(reddit, "joke", "joke from reddit r/dadjokes")
 
     def process(self, msg: ZulipMsg):
-        post = self.get_random_submission("dadjokes")
-        if post:
-            msg.reply("{}\n{}".format(post.title, post.selftext))
+        self.reply_with_random_post(msg, "dadjokes")
 
 
 class ZulipBotCmdAww(ZulipBotCmdRedditBase):
@@ -188,17 +204,45 @@ class ZulipBotCmdAww(ZulipBotCmdRedditBase):
         self.reply_with_random_media(msg, "aww", query="url:jpg")
 
 
-class ZulipBotCmdEarth(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
-        super().__init__(reddit, "earth", "picture from reddit r/EarthPorn")
-
-    def process(self, msg: ZulipMsg):
-        self.reply_with_random_media(msg, "EarthPorn", query="url:jpg")
-
-
 class ZulipBotCmdGif(ZulipBotCmdRedditBase):
     def __init__(self, reddit):
         super().__init__(reddit, "gif", "gif from reddit r/gif")
 
     def process(self, msg: ZulipMsg):
         self.reply_with_random_media(msg, "aww", query="url:gif")
+
+
+class ZulipBotCmdRedPost(ZulipBotCmdRedditBase):
+    def __init__(self, reddit):
+        super().__init__(reddit, "redpost",
+                         "post from reddit", help_args="[subreddit]")
+
+    def process(self, msg: ZulipMsg):
+        args = msg.msg['content'].split()
+        subreddit = args[1] if len(
+            args) > 1 else self.reddit.random_subreddit()
+        self.reply_with_random_post(msg, subreddit)
+
+
+class ZulipBotCmdRedPic(ZulipBotCmdRedditBase):
+    def __init__(self, reddit):
+        super().__init__(reddit, "redpic",
+                         "picture from reddit", help_args="[subreddit]")
+
+    def process(self, msg: ZulipMsg):
+        args = msg.msg['content'].split()
+        subreddit = args[1] if len(
+            args) > 1 else self.reddit.random_subreddit()
+        self.reply_with_random_media(msg, subreddit, query="url:jpg")
+
+
+class ZulipBotCmdRedGif(ZulipBotCmdRedditBase):
+    def __init__(self, reddit):
+        super().__init__(reddit, "redgif",
+                         "gif from reddit", help_args="[subreddit]")
+
+    def process(self, msg: ZulipMsg):
+        args = msg.msg['content'].split()
+        subreddit = args[1] if len(
+            args) > 1 else self.reddit.random_subreddit()
+        self.reply_with_random_media(msg, subreddit, query="url:gif")
