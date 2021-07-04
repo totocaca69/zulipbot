@@ -36,7 +36,7 @@ class ZulipMsg(object):
               status_str: str = ""):
         prefix = self.robot_prefix
         if is_error:
-            prefix += " :danger:*ERROR*:danger:"
+            prefix += " :danger:**ERROR**:danger:"
         if status_str:
             prefix += f" *{status_str}*"
 

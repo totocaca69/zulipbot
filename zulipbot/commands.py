@@ -61,7 +61,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
             msg.reply("{}\n\n{}".format(s.title, s.selftext),
                       status_str=f"from r/{str(subreddit)}")
         else:
-            msg.reply("cannot find an post in subreddit={}".format(subreddit),
+            msg.reply(f"cannot find an media in r/{str(subreddit)}",
                       is_error=True)
 
     def reply_with_random_media(self,
@@ -74,7 +74,19 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
                       fenced_code_block=False,
                       status_str=f"from r/{str(subreddit)}")
         else:
-            msg.reply("cannot find an media in subreddit={}".format(subreddit),
+            msg.reply(f"cannot find an media in r/{str(subreddit)}",
+                      is_error=True)
+
+    def play_random_media_audio(self,
+                                  msg: ZulipMsg,
+                                  subreddit: Union[str, models.Subreddit],
+                                  query: str = "url:youtube"):
+        s = self.get_random_submission(subreddit, query=query)
+        if s:
+            msg.reply(s.title, status_str=f"from r/{str(subreddit)}")
+            AudioPlayer().play(s.url)
+        else:
+            msg.reply(f"cannot find an media in r/{str(subreddit)}",
                       is_error=True)
 
     def process(self, msg: ZulipMsg):
@@ -183,16 +195,9 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
         url = None
         if len(args) > 1:
             url = args[1]
-        elif self.reddit_cmd:
-            s = self.reddit_cmd.get_random_submission('listentothis', query='url:youtube')
-            if s:
-                url = s.url
-                msg.reply(f"{s.title}", status_str="from r/listentothis")
-        if url:
-            self.audio.stop()
             self.audio.play(url)
-        else:
-            msg.reply("url is empty", is_error=True)
+        elif self.reddit_cmd:
+            self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
 
 
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
@@ -264,3 +269,15 @@ class ZulipBotCmdRedGif(ZulipBotCmdRedditBase):
         subreddit = args[1] if len(args) > 1 else \
             self.reddit.random_subreddit()
         self.reply_with_random_media(msg, subreddit, query="url:gif")
+
+
+class ZulipBotCmdRedPlay(ZulipBotCmdRedditBase):
+    def __init__(self, reddit: Reddit):
+        super().__init__(reddit, "redplay",
+                         "play audio from reddit", help_args="[subreddit]")
+
+    def process(self, msg: ZulipMsg):
+        args = msg.msg['content'].split()
+        subreddit = args[1] if len(args) > 1 else \
+            self.reddit.random_subreddit()
+        self.play_random_media_audio(msg, subreddit, query="url:youtube")

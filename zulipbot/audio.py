@@ -5,6 +5,7 @@ from gtts import gTTS
 
 class AudioPlayer(object):
     def play(self, url: str):
+        self.stop()
         cmd = "cvlc --quiet --no-loop --play-and-exit --no-video {}&".format(
             url)
         os.system(cmd)
