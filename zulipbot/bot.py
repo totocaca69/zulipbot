@@ -20,7 +20,10 @@ class ZulipBot(object):
         msg = ZulipMsg(self.client, self.msg_filter, m)
         for cmd in self.cmds:
             if cmd.is_to_be_processed(msg):
-                cmd.process(msg)
+                try:
+                    cmd.process(msg)
+                except:
+                    msg.reply(f"{msg.cmd_prefix}{cmd.cmd_name} failed", is_error=True)
 
     def run(self):
         self.client.call_on_each_message(self.run_callback)
