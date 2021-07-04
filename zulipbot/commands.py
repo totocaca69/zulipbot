@@ -61,7 +61,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
             msg.reply("{}\n\n{}".format(s.title, s.selftext),
                       status_str=f"from r/{str(subreddit)}")
         else:
-            msg.reply("cannot find an post in subreddit={}'".format(subreddit),
+            msg.reply("cannot find an post in subreddit={}".format(subreddit),
                       is_error=True)
 
     def reply_with_random_media(self,
@@ -74,7 +74,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
                       fenced_code_block=False,
                       status_str=f"from r/{str(subreddit)}")
         else:
-            msg.reply("cannot find an media in subreddit={}'".format(subreddit),
+            msg.reply("cannot find an media in subreddit={}".format(subreddit),
                       is_error=True)
 
     def process(self, msg: ZulipMsg):
@@ -212,7 +212,7 @@ class ZulipBotCmdGif(ZulipBotCmdRedditBase):
         super().__init__(reddit, "gif", "gif from reddit r/gif")
 
     def process(self, msg: ZulipMsg):
-        self.reply_with_random_media(msg, "aww", query="url:gif")
+        self.reply_with_random_media(msg, "gif", query="url:gif")
 
 
 class ZulipBotCmdRedPost(ZulipBotCmdRedditBase):
