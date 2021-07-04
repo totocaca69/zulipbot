@@ -172,12 +172,27 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 
 
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
-    def __init__(self):
-        super().__init__("play", "play audio", help_args="[url]")
+    def __init__(self, reddit: Optional[Reddit] = None):
+        super().__init__("play", "play audio from url or r/listentothis", help_args="[url]")
+        self.reddit_cmd = None
+        if reddit:
+            self.reddit_cmd = ZulipBotCmdRedditBase(reddit, '', '')
 
     def process(self, msg: ZulipMsg):
-        url = " ".join(msg.msg['content'].split()[1:])
-        self.audio.play(url)
+        args = msg.msg['content'].split()
+        url = None
+        if len(args) > 1:
+            url = args[1]
+        elif self.reddit_cmd:
+            s = self.reddit_cmd.get_random_submission('listentothis', query='url:youtube')
+            if s:
+                url = s.url
+                msg.reply(f"{s.title}", status_str="from r/listentothis")
+        if url:
+            self.audio.stop()
+            self.audio.play(url)
+        else:
+            msg.reply("url is empty", is_error=True)
 
 
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
@@ -192,7 +207,7 @@ class ZulipBotCmdStop(ZulipBotCmdAudioBase):
 # command classes: reddit
 # --------------------------------------------------------------
 class ZulipBotCmdJoke(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
+    def __init__(self, reddit: Reddit):
         super().__init__(reddit, "joke", "joke from reddit r/dadjokes")
 
     def process(self, msg: ZulipMsg):
@@ -200,7 +215,7 @@ class ZulipBotCmdJoke(ZulipBotCmdRedditBase):
 
 
 class ZulipBotCmdAww(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
+    def __init__(self, reddit: Reddit):
         super().__init__(reddit, "aww", "picture from reddit r/aww")
 
     def process(self, msg: ZulipMsg):
@@ -208,7 +223,7 @@ class ZulipBotCmdAww(ZulipBotCmdRedditBase):
 
 
 class ZulipBotCmdGif(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
+    def __init__(self, reddit: Reddit):
         super().__init__(reddit, "gif", "gif from reddit r/gif")
 
     def process(self, msg: ZulipMsg):
@@ -216,36 +231,36 @@ class ZulipBotCmdGif(ZulipBotCmdRedditBase):
 
 
 class ZulipBotCmdRedPost(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
+    def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redpost",
                          "post from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
         args = msg.msg['content'].split()
-        subreddit = args[1] if len(
-            args) > 1 else self.reddit.random_subreddit()
+        subreddit = args[1] if len(args) > 1 else \
+            self.reddit.random_subreddit()
         self.reply_with_random_post(msg, subreddit)
 
 
 class ZulipBotCmdRedPic(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
+    def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redpic",
                          "picture from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
         args = msg.msg['content'].split()
-        subreddit = args[1] if len(
-            args) > 1 else self.reddit.random_subreddit()
+        subreddit = args[1] if len(args) > 1 else \
+            self.reddit.random_subreddit()
         self.reply_with_random_media(msg, subreddit, query="url:jpg")
 
 
 class ZulipBotCmdRedGif(ZulipBotCmdRedditBase):
-    def __init__(self, reddit):
+    def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redgif",
                          "gif from reddit", help_args="[subreddit]")
 
     def process(self, msg: ZulipMsg):
         args = msg.msg['content'].split()
-        subreddit = args[1] if len(
-            args) > 1 else self.reddit.random_subreddit()
+        subreddit = args[1] if len(args) > 1 else \
+            self.reddit.random_subreddit()
         self.reply_with_random_media(msg, subreddit, query="url:gif")
