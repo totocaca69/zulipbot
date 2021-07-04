@@ -77,11 +77,17 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         self.cmds = cmds
 
     def process(self, msg: ZulipMsg):
-        help_list = []
+        help_str = ""
+        help_list_from_category = {}
         for cmd in self.cmds:
+            help_list = help_list_from_category.get(cmd.help_category, [])
             help_list.append("!{:10s} {:20s} : {}".format(
                 cmd.cmd_name, cmd.help_args, cmd.help))
-        msg.reply("\n".join(sorted(help_list)))
+            help_list_from_category[cmd.help_category] = help_list
+        for category in help_list_from_category.keys():
+            help_str += f"\n\n{category}:\n  "
+            help_str += "\n  ".join(sorted(help_list_from_category[category]))
+        msg.reply(help_str)
 
 
 class ZulipBotCmdCoucou(ZulipBotCmdBase):
