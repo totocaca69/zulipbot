@@ -33,7 +33,6 @@ with open('./msg_filter.json') as f:
     msg_filter = json.load(f)
 
 bot = ZulipBot(client, msg_filter)
-bot.add_cmd(ZulipBotCmdCoucou())
 bot.add_cmd(ZulipBotCmdGnagnagna())
 bot.add_cmd(ZulipBotCmdWeather())
 bot.add_cmd(ZulipBotCmdSpeak())

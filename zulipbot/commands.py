@@ -135,14 +135,6 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         msg.reply(help_str)
 
 
-class ZulipBotCmdCoucou(ZulipBotCmdBase):
-    def __init__(self):
-        super().__init__("coucou", "reply 'coucou'")
-
-    def process(self, msg: ZulipMsg):
-        msg.reply("coucou")
-
-
 class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
     def __init__(self):
         super().__init__("gnagnagna",
