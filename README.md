@@ -1,4 +1,15 @@
 # zulipbot
+Use Zulip to control the world.
+
+## Rationale
+
+This robot implements commands that the user can trigger on the Zulip chat.  
+Those commands do things such as:
+  - printing posts, pics, gifs from Reddit
+  - playing music from Reddit
+  - playing music from Youtube
+  - making jokes
+  - giving you a weather report
 
 ## Requirements
 
@@ -33,8 +44,10 @@ Then, in Zulip, type:
 ```
 
 ## Acknowledgements
-Thanks to my buddy T3lchar for letting me still his bot: https://github.com/T3lchar/zulip_bot
+
+Thanks to my buddy T3lchar for letting me steal his bot: https://github.com/T3lchar/zulip_bot
 
 ## FAQ
+
 Q: The command **!weather** fails with an SSL error, what's wrong?  
 A: Take a look at this [issue](https://stackoverflow.com/questions/44649449/brew-installation-of-python-3-6-1-ssl-certificate-verify-failed-certificate/44649450#44649450) and execute ./bin/install_certifi.py
