@@ -1,6 +1,5 @@
 import asyncio
 import random
-import re
 from typing import Optional, Union
 
 from praw import Reddit, models
@@ -42,9 +41,9 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         return f"from [r/{sr_name}]({url})"
 
     def get_subreddit_from_msg(self, msg: ZulipMsg) -> Union[str, models.Subreddit]:
-        args = msg.msg['content'].split()
-        subreddit = args[1] if len(args) > 1 else \
-            self.reddit.random_subreddit()
+        subreddit = msg.get_arg(1)
+        if not subreddit:
+            subreddit = self.reddit.random_subreddit()
         return subreddit
 
     def get_random_submission(self,
@@ -158,8 +157,7 @@ class ZulipBotCmdRepeat(ZulipBotCmdBase):
             else:
                 msg.reply("no previous command", is_error=True)
         else:
-            first_word = msg.msg['content'].split()[0]
-            cmd_name = first_word[1:]
+            cmd_name = msg.get_arg(0)
             self.prev_cmd = self.get_cmd(cmd_name)
             self.prev_msg = msg
 
@@ -176,11 +174,7 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
 
     def process(self, msg: ZulipMsg):
         if msg.is_valid_cmd(self.cmd_name):
-            m = re.match(r".* @\*\*(.*)\*\*", msg.msg['content'])
-            if m:
-                self.full_name = m.group(1)
-            else:
-                self.full_name = 'off'
+            self.full_name = msg.get_full_name_from_handle(msg.get_arg(-1))
         elif msg.msg['sender_full_name'] == self.full_name:
             msg.reply(
                 "gnagnagna, j'm'appelle {}, a gnagnagna".format(self.full_name))
@@ -213,10 +207,9 @@ class ZulipBotCmdAudio(ZulipBotCmdAudioBase):
                          help_args="[get|set IDX]")
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        subcmd = args[1]
+        subcmd = msg.get_arg(1)
         if subcmd == "set":
-            idx = int(args[2])
+            idx = int(msg.get_arg(2))
             info = self.audio.audio_set_output(idx)
             if info:
                 msg.reply(info)
@@ -230,8 +223,7 @@ class ZulipBotCmdVolume(ZulipBotCmdAudioBase):
                          help_args="[mute|up|down|set INT]")
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        subcmd = args[1]
+        subcmd = msg.get_arg(1)
         if subcmd == "mute":
             volume = self.audio.volume_mute()
             msg.reply(f"volume {volume}%")
@@ -242,7 +234,7 @@ class ZulipBotCmdVolume(ZulipBotCmdAudioBase):
             volume = self.audio.volume_down()
             msg.reply(f"volume {volume}%")
         elif subcmd == "set":
-            idx = int(args[2])
+            idx = int(msg.get_arg(2))
             volume = self.audio.volume_set(idx)
             msg.reply(f"volume {volume}%")
 
@@ -252,7 +244,7 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
         super().__init__("speak", "speak in french", help_args="[french_text]")
 
     def process(self, msg: ZulipMsg):
-        text = " ".join(msg.msg['content'].split()[1:])
+        text = msg.get_arg(-1)
         self.audio.speak(text, language='fr')
 
 
@@ -265,10 +257,8 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
             self.reddit_cmd = ZulipBotCmdRedditBase(reddit, '', '')
 
     def process(self, msg: ZulipMsg):
-        args = msg.msg['content'].split()
-        url = None
-        if len(args) > 1:
-            url = args[1]
+        url = msg.get_arg(1)
+        if url:
             self.audio.play(url)
         elif self.reddit_cmd:
             self.reddit_cmd.play_random_media_audio(msg, 'listentothis')

@@ -1,3 +1,4 @@
+import re
 from typing import Union
 
 import zulip
@@ -16,6 +17,30 @@ class ZulipMsg(object):
         self.msg_filter = msg_filter
         self.msg = msg
 
+    def get_arg(self, index: int) -> str:
+        """index=0: returns command name
+        index=-1: retuns all args
+        index=n: retuns n-th arg"""
+        arg = ""
+        msg_list = self.msg['content'].split()
+        is_cmd = msg_list[0][0] == self.cmd_prefix
+        if is_cmd and index < len(msg_list):
+            if index == -1:
+                arg = " ".join(msg_list[1:])
+            else:
+                arg = msg_list[index]
+                # remove prefix to get command name
+                if index == 0:
+                    arg = arg[1:]
+        return arg
+
+    def get_full_name_from_handle(self, handle_string: str) -> str:
+        full_name = ""
+        m = re.match(r"^@\*\*(.*)\*\*", handle_string)
+        if m:
+            full_name = m.group(1)
+        return full_name
+
     def is_valid(self) -> bool:
         not_a_robot = self.msg['content'].split()[0] != self.robot_prefix
         valid = True
@@ -26,10 +51,9 @@ class ZulipMsg(object):
         return not_a_robot and valid
 
     def is_valid_cmd(self, cmd_name: Union[str, list[str]]) -> bool:
-        first_word = self.msg['content'].split()[0]
         cmd_name_list = [cmd_name] if isinstance(cmd_name, str) else cmd_name
-        return self.is_valid() and \
-            first_word[0] == self.cmd_prefix and first_word[1:] in cmd_name_list
+        msg_cmd_name = self.get_arg(0)
+        return self.is_valid() and msg_cmd_name in cmd_name_list
 
     def reply(self, txt: str,
               fenced_code_block: bool = True,
