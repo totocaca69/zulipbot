@@ -166,7 +166,7 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
     def __init__(self):
         super().__init__("gnagnagna",
                          "reply 'gnagnagna' everytime someone talks",
-                         help_args="[@**someone**|off]")
+                         help_args="@**SOMEONE**|off")
         self.full_name = "off"
 
     def is_to_be_processed(self, msg: ZulipMsg) -> bool:
@@ -204,7 +204,7 @@ class ZulipBotCmdWeather(ZulipBotCmdBase):
 class ZulipBotCmdAudio(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("audio", "get audio info, set output",
-                         help_args="[get|set IDX]")
+                         help_args="get|set IDX")
 
     def process(self, msg: ZulipMsg):
         subcmd = msg.get_arg(1)
@@ -220,7 +220,7 @@ class ZulipBotCmdAudio(ZulipBotCmdAudioBase):
 class ZulipBotCmdVolume(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("vol", "change volume",
-                         help_args="[mute|up|down|set INT]")
+                         help_args="mute|up|down|set INT")
 
     def process(self, msg: ZulipMsg):
         subcmd = msg.get_arg(1)
@@ -241,7 +241,7 @@ class ZulipBotCmdVolume(ZulipBotCmdAudioBase):
 
 class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
     def __init__(self):
-        super().__init__("speak", "speak in french", help_args="[french_text]")
+        super().__init__("speak", "speak in french", help_args="TEXT")
 
     def process(self, msg: ZulipMsg):
         text = msg.get_arg(-1)
@@ -251,7 +251,7 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
     def __init__(self, reddit: Optional[Reddit] = None):
         super().__init__(
-            "play", "play audio from url or r/listentothis", help_args="[url]")
+            "play", "play audio from url or r/listentothis", help_args="[URL]")
         self.reddit_cmd = None
         if reddit:
             self.reddit_cmd = ZulipBotCmdRedditBase(reddit, '', '')
@@ -302,7 +302,7 @@ class ZulipBotCmdGif(ZulipBotCmdRedditBase):
 class ZulipBotCmdRedPost(ZulipBotCmdRedditBase):
     def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redpost",
-                         "post from reddit", help_args="[subreddit]")
+                         "post from reddit", help_args="[SUBREDDIT]")
 
     def process(self, msg: ZulipMsg):
         subreddit = self.get_subreddit_from_msg(msg)
@@ -312,7 +312,7 @@ class ZulipBotCmdRedPost(ZulipBotCmdRedditBase):
 class ZulipBotCmdRedPic(ZulipBotCmdRedditBase):
     def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redpic",
-                         "picture from reddit", help_args="[subreddit]")
+                         "picture from reddit", help_args="[SUBREDDIT]")
 
     def process(self, msg: ZulipMsg):
         subreddit = self.get_subreddit_from_msg(msg)
@@ -322,7 +322,7 @@ class ZulipBotCmdRedPic(ZulipBotCmdRedditBase):
 class ZulipBotCmdRedGif(ZulipBotCmdRedditBase):
     def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redgif",
-                         "gif from reddit", help_args="[subreddit]")
+                         "gif from reddit", help_args="[SUBREDDIT]")
 
     def process(self, msg: ZulipMsg):
         subreddit = self.get_subreddit_from_msg(msg)
@@ -332,7 +332,7 @@ class ZulipBotCmdRedGif(ZulipBotCmdRedditBase):
 class ZulipBotCmdRedPlay(ZulipBotCmdRedditBase):
     def __init__(self, reddit: Reddit):
         super().__init__(reddit, "redplay",
-                         "play audio from reddit", help_args="[subreddit]")
+                         "play audio from reddit", help_args="[SUBREDDIT]")
 
     def process(self, msg: ZulipMsg):
         subreddit = self.get_subreddit_from_msg(msg)
