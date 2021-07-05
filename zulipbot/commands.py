@@ -135,6 +135,35 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         msg.reply(help_str)
 
 
+class ZulipBotCmdRepeat(ZulipBotCmdBase):
+    def __init__(self, cmds: list[ZulipBotCmdBase]):
+        super().__init__("repeat", "repeat last command")
+        self.cmds = cmds
+        self.prev_cmd = None
+        self.prev_msg = None
+
+    def get_cmd(self, cmd_name: str) -> Optional[ZulipBotCmdBase]:
+        for cmd in self.cmds:
+            if cmd.cmd_name == cmd_name:
+                return cmd
+
+    def is_to_be_processed(self, msg: ZulipMsg) -> bool:
+        cmd_name_list = [cmd.cmd_name for cmd in self.cmds]
+        return msg.is_valid_cmd(cmd_name_list)
+
+    def process(self, msg: ZulipMsg):
+        if msg.is_valid_cmd(self.cmd_name):
+            if self.prev_cmd and self.prev_msg:
+                self.prev_cmd.process(self.prev_msg)
+            else:
+                msg.reply("no previous command", is_error=True)
+        else:
+            first_word = msg.msg['content'].split()[0]
+            cmd_name = first_word[1:]
+            self.prev_cmd = self.get_cmd(cmd_name)
+            self.prev_msg = msg
+
+
 class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
     def __init__(self):
         super().__init__("gnagnagna",
@@ -142,7 +171,7 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
                          help_args="[@**someone**|off]")
         self.full_name = "off"
 
-    def is_to_be_processed(self, msg: ZulipMsg):
+    def is_to_be_processed(self, msg: ZulipMsg) -> bool:
         return msg.is_valid()
 
     def process(self, msg: ZulipMsg):

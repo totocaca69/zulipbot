@@ -1,3 +1,5 @@
+from typing import Union
+
 import zulip
 
 from .audio import *
@@ -23,10 +25,11 @@ class ZulipMsg(object):
                 break
         return not_a_robot and valid
 
-    def is_valid_cmd(self, cmd_name) -> bool:
+    def is_valid_cmd(self, cmd_name: Union[str, list[str]]) -> bool:
         first_word = self.msg['content'].split()[0]
+        cmd_name_list = [cmd_name] if isinstance(cmd_name, str) else cmd_name
         return self.is_valid() and \
-            first_word[0] == self.cmd_prefix and first_word[1:] == cmd_name
+            first_word[0] == self.cmd_prefix and first_word[1:] in cmd_name_list
 
     def reply(self, txt: str,
               fenced_code_block: bool = True,
