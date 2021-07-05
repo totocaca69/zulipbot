@@ -7,7 +7,8 @@
 pip3 install -r requirements.txt
 ```
 ### Progams
-  - **cvlc**: in order to play audio
+  - **cvlc**: audio/video player
+  - **pulseaudio**: manages volume and audio outputs
 
 ### Setup Files
 Add the following files in this directory:

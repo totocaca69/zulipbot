@@ -126,7 +126,7 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         help_list_from_category = {}
         for cmd in self.cmds:
             help_list = help_list_from_category.get(cmd.help_category, [])
-            help_list.append("!{:10s} {:20s} : {}".format(
+            help_list.append("!{:10s} {:25s} : {}".format(
                 cmd.cmd_name, cmd.help_args, cmd.help))
             help_list_from_category[cmd.help_category] = help_list
         for category in help_list_from_category.keys():
@@ -139,7 +139,7 @@ class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
     def __init__(self):
         super().__init__("gnagnagna",
                          "reply 'gnagnagna' everytime someone talks",
-                         help_args="[@**someone** | off]")
+                         help_args="[@**someone**|off]")
         self.full_name = "off"
 
     def is_to_be_processed(self, msg: ZulipMsg):
@@ -178,6 +178,46 @@ class ZulipBotCmdWeather(ZulipBotCmdBase):
 # --------------------------------------------------------------
 # command classes: audio
 # --------------------------------------------------------------
+class ZulipBotCmdAudio(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__("audio", "get audio info, set output",
+                         help_args="[get|set IDX]")
+
+    def process(self, msg: ZulipMsg):
+        args = msg.msg['content'].split()
+        subcmd = args[1]
+        if subcmd == "set":
+            idx = int(args[2])
+            info = self.audio.audio_set_output(idx)
+            if info:
+                msg.reply(info)
+        else:
+            msg.reply(self.audio.audio_get_info())
+
+
+class ZulipBotCmdVolume(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__("vol", "change volume",
+                         help_args="[mute|up|down|set INT]")
+
+    def process(self, msg: ZulipMsg):
+        args = msg.msg['content'].split()
+        subcmd = args[1]
+        if subcmd == "mute":
+            volume = self.audio.volume_mute()
+            msg.reply(f"volume {volume}%")
+        elif subcmd == "up":
+            volume = self.audio.volume_up()
+            msg.reply(f"volume {volume}%")
+        elif subcmd == "down":
+            volume = self.audio.volume_down()
+            msg.reply(f"volume {volume}%")
+        elif subcmd == "set":
+            idx = int(args[2])
+            volume = self.audio.volume_set(idx)
+            msg.reply(f"volume {volume}%")
+
+
 class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("speak", "speak in french", help_args="[french_text]")
@@ -207,7 +247,7 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
 
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def __init__(self):
-        super().__init__("stop", "stop audio")
+        super().__init__("stop", "stop player")
 
     def process(self, _: ZulipMsg):
         self.audio.stop()
