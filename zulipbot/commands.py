@@ -1,4 +1,5 @@
 import asyncio
+import json
 import random
 from typing import Optional, Union
 
@@ -160,6 +161,26 @@ class ZulipBotCmdRepeat(ZulipBotCmdBase):
             cmd_name = msg.get_arg(0)
             self.prev_cmd = self.get_cmd(cmd_name)
             self.prev_msg = msg
+
+
+class ZulipBotCmdBot(ZulipBotCmdBase):
+    def __init__(self, bot_dict: dict):
+        super().__init__("bot", "repeat last command")
+        super().__init__("bot", "robot info and actions",
+                         help_args="on|off|info")
+        self.bot_dict = bot_dict
+
+    def process(self, msg: ZulipMsg):
+        subcmd = msg.get_arg(1)
+        if subcmd == "on":
+            self.bot_dict['running'] = True
+            msg.reply("robot is ON")
+        elif subcmd == "off":
+            self.bot_dict['running'] = False
+            msg.reply("robot is OFF")
+        elif subcmd == "info":
+            d = self.bot_dict.copy()
+            msg.reply(json.dumps(d, indent=4))
 
 
 class ZulipBotCmdGnagnagna(ZulipBotCmdBase):
