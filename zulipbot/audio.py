@@ -6,6 +6,9 @@ import pulsectl
 
 class AudioPlayer(object):
     def __init__(self, use_pulsectl: bool = True):
+        """audio functions
+
+        use_pulsectl=False will help with multi threading issues"""
         self.pulseaudio = None
         if use_pulsectl:
             self.pulseaudio = pulsectl.Pulse('zulipbot', connect=False)
