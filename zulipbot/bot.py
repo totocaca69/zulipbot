@@ -4,6 +4,7 @@ import socket
 
 import zulip
 
+from zulipbot.audio import *
 from zulipbot.commands import *
 from zulipbot.msg import *
 
@@ -16,6 +17,7 @@ class ZulipBot(object):
         self.msg_filter = msg_filter
         self.cmds: list[ZulipBotCmdBase] = []
         self.msg_queues: dict[str, Queue] = {}
+        AudioPlayer().volume_set(50)
         # variables shared with all the threads
         self.manager = Manager()
         self.create_shared_dict()

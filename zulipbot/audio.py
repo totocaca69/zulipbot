@@ -5,15 +5,19 @@ import pulsectl
 
 
 class AudioPlayer(object):
-    def __init__(self):
-        self.pulseaudio = pulsectl.Pulse('zulipbot', connect=False)
-        self.pulseaudio.connect(autospawn="True")
-        self.volume_set(50)
+    def __init__(self, use_pulsectl: bool = True):
+        self.pulseaudio = None
+        if use_pulsectl:
+            self.pulseaudio = pulsectl.Pulse('zulipbot', connect=False)
+            self.pulseaudio.connect(autospawn="True")
+            self.volume_set(50)
 
     # ----------------------------------------------------------
     # pulseaudio: volume and sound
     # ----------------------------------------------------------
     def audio_get_info(self, sink_idx_only: int = -1) -> str:
+        if not self.pulseaudio:
+            return ""
         info = ""
         for sink in self.pulseaudio.sink_list():
             if sink_idx_only == -1 or sink_idx_only == sink.index:
@@ -22,24 +26,32 @@ class AudioPlayer(object):
         return info
 
     def audio_set_output(self, index: int) -> str:
+        if not self.pulseaudio:
+            return ""
         for sink in self.pulseaudio.sink_list():
             if sink.index == index:
                 self.pulseaudio.default_set(sink)
         return self.audio_get_info(sink_idx_only=index)
 
     def volume_up(self) -> int:
+        if not self.pulseaudio:
+            return -1
         sink = self.pulseaudio.sink_list()[0]
         volume = self.pulseaudio.volume_get_all_chans(sink)
         volume += 0.1
         return self.volume_set(int(volume*100))
 
     def volume_down(self) -> int:
+        if not self.pulseaudio:
+            return -1
         sink = self.pulseaudio.sink_list()[0]
         volume = self.pulseaudio.volume_get_all_chans(sink)
         volume -= 0.1
         return self.volume_set(int(volume*100))
 
     def volume_set(self, volume_pct: int) -> int:
+        if not self.pulseaudio:
+            return -1
         if volume_pct < 0:
             volume_pct = 0
         elif volume_pct > 100:

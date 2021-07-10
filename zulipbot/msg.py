@@ -1,5 +1,5 @@
 import re
-from typing import Union, Any
+from typing import Any, Union
 
 import zulip
 
@@ -12,11 +12,15 @@ class ZulipMsg(object):
     robot_prefix = ":robot:"
     cmd_prefix = "!"
 
-    def __init__(self, client: zulip.Client, msg_filter: dict, msg: dict):
+    def __init__(self,
+                 client: zulip.Client,
+                 msg_filter: dict,
+                 msg: dict):
         self.client = client
         self.msg_filter = msg_filter
         self.msg = msg
-        self.cmd_options: dict[str, Union[str, bool]] = self.parse_cmd_options()
+        self.cmd_options: dict[str, Union[str, bool]] \
+            = self.parse_cmd_options()
 
     def get_option(self, option_name: str, default_value: Union[str, bool]) -> Any:
         return self.cmd_options[option_name] if option_name in self.cmd_options \
@@ -84,9 +88,11 @@ class ZulipMsg(object):
               is_error: bool = False,
               speak: bool = False,
               speak_lang: str = 'en',
-              status_str: str = ""):
-        speak = self.get_option('speak', speak)
-        speak_lang = self.get_option('lang', speak_lang)
+              status_str: str = "",
+              use_options: bool = True):
+        if use_options:
+            speak = self.get_option('speak', speak)
+            speak_lang = self.get_option('lang', speak_lang)
         prefix = self.robot_prefix
         if is_error:
             prefix += " :danger:**ERROR**:danger:"
@@ -94,7 +100,8 @@ class ZulipMsg(object):
             prefix += f" *{status_str}*"
 
         if speak:
-            AudioPlayer().speak(txt, language=speak_lang)
+            # don't create pulsectl object to avoid pickle+ctypes object issue
+            AudioPlayer(use_pulsectl=False).speak(txt, language=speak_lang)
         else:
             if self.msg["type"] == "private":
                 rep = {"type": "private",
