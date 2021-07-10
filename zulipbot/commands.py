@@ -19,6 +19,10 @@ class ZulipBotCmdBase(object):
         self.help = help
         self.help_args = help_args
         self.help_category = "misc"
+        self.help_common_options = {
+            '--speak': 'say the msg instead of printing it',
+            '--lang': 'change spoken language of the cmd',
+        }
 
     def is_to_be_processed(self, msg: ZulipMsg) -> bool:
         return msg.is_valid_cmd(self.cmd_name)
@@ -124,11 +128,18 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
     def process(self, msg: ZulipMsg):
         help_str = ""
         help_list_from_category = {}
+        # commands help
         for cmd in self.cmds:
             help_list = help_list_from_category.get(cmd.help_category, [])
             help_list.append("!{:10s} {:25s} : {}".format(
                 cmd.cmd_name, cmd.help_args, cmd.help))
             help_list_from_category[cmd.help_category] = help_list
+        # common options
+        help_list = []
+        for option, description in self.help_common_options.items():
+            help_list.append("{:10s} : {}".format(option, description))
+        help_list_from_category['common options'] = help_list
+        # print
         for category in help_list_from_category.keys():
             help_str += f"\n\n{category}:\n  "
             help_str += "\n  ".join(sorted(help_list_from_category[category]))
@@ -266,7 +277,7 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 
     def process(self, msg: ZulipMsg):
         text = msg.get_arg(-1)
-        self.audio.speak(text, language='fr')
+        self.audio.speak(text, language=msg.get_option('lang', 'fr'))
 
 
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):

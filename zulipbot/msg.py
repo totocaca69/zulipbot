@@ -1,5 +1,5 @@
 import re
-from typing import Union
+from typing import Union, Any
 
 import zulip
 
@@ -16,6 +16,30 @@ class ZulipMsg(object):
         self.client = client
         self.msg_filter = msg_filter
         self.msg = msg
+        self.cmd_options: dict[str, Union[str, bool]] = self.parse_cmd_options()
+
+    def get_option(self, option_name: str, default_value: Union[str, bool]) -> Any:
+        return self.cmd_options[option_name] if option_name in self.cmd_options \
+            else default_value
+
+    def parse_cmd_options(self) -> dict[str, Union[str, bool]]:
+        """parse msg content, remove --option(=val) and return a dict with those options"""
+        d = {}
+        content = self.msg['content']
+        split_content: list[str] = self.msg['content'].split()
+        content = []
+        for word in split_content:
+            if word.startswith('--'):
+                word = word.replace('--', '')
+                w_split = word.split('=')
+                if len(w_split) > 1:
+                    d[w_split[0]] = w_split[1]
+                else:
+                    d[w_split[0]] = True
+            else:
+                content.append(word)
+        self.msg['content'] = " ".join(content)
+        return d
 
     def get_arg(self, index: int) -> str:
         """index=0: returns command name
@@ -61,6 +85,8 @@ class ZulipMsg(object):
               speak: bool = False,
               speak_lang: str = 'en',
               status_str: str = ""):
+        speak = self.get_option('speak', speak)
+        speak_lang = self.get_option('lang', speak_lang)
         prefix = self.robot_prefix
         if is_error:
             prefix += " :danger:**ERROR**:danger:"
