@@ -100,8 +100,7 @@ class ZulipMsg(object):
             prefix += f" *{status_str}*"
 
         if speak:
-            # don't create pulsectl object to avoid pickle+ctypes object issue
-            AudioPlayer(use_pulsectl=False).speak(txt, language=speak_lang)
+            MediaPlayer().speak(txt, language=speak_lang)
         else:
             if self.msg["type"] == "private":
                 rep = {"type": "private",
