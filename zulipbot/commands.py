@@ -2,7 +2,7 @@ import asyncio
 import json
 import random
 import re, bs4, requests
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any
 
 from praw import Reddit, models
 import python_weather
@@ -338,7 +338,7 @@ class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
         keywords = re.split("\W+", raw_search)
         url = yt_url_search_base+"+".join(keywords)  
         # cookies are necessary here, otherwise youtube's consent page is returned
-        ans = requests.get(url, cookies=self.cookie_jar)
+        ans = requests.get(url, cookies=self.cookie_jar).text
         soup = bs4.BeautifulSoup(ans, "html.parser")
         # fetch the json containing the search results and extract the top result
         scripts = soup.find_all("script")
