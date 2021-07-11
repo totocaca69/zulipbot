@@ -1,75 +1,42 @@
 import os
+import subprocess
 
 from gtts import gTTS
-import pulsectl
 
 
-class AudioPlayer(object):
-    def __init__(self, use_pulsectl: bool = True):
-        """audio functions
+class Audio(object):
+    def __init__(self):
+        """audio functions (output, volume etc)"""
+        self.volume = 50
 
-        use_pulsectl=False will help with multi threading issues"""
-        self.pulseaudio = None
-        if use_pulsectl:
-            self.pulseaudio = pulsectl.Pulse('zulipbot', connect=False)
-            self.pulseaudio.connect(autospawn="True")
-            self.volume_set(50)
+    def get_sink_indexes(self) -> list:
+        indexes = []
+        for line in self.get_info().split("\n"):
+            if line:
+                indexes.append(line.split()[0])
+        return indexes
 
-    # ----------------------------------------------------------
-    # pulseaudio: volume and sound
-    # ----------------------------------------------------------
-    def audio_get_info(self, sink_idx_only: int = -1) -> str:
-        if not self.pulseaudio:
-            return ""
-        info = ""
-        for sink in self.pulseaudio.sink_list():
-            if sink_idx_only == -1 or sink_idx_only == sink.index:
-                info += "idx={} vol={}% \t{}\n".format(
-                    sink.index, int(sink.volume.values[0]*100), sink.description)
-        return info
+    def get_info(self) -> str:
+        p = subprocess.run(
+            ['pactl', 'list', 'short', 'sinks'], capture_output=True)
+        return p.stdout.decode('utf-8')
 
-    def audio_set_output(self, index: int) -> str:
-        if not self.pulseaudio:
-            return ""
-        for sink in self.pulseaudio.sink_list():
-            if sink.index == index:
-                self.pulseaudio.default_set(sink)
-        return self.audio_get_info(sink_idx_only=index)
-
-    def volume_up(self) -> int:
-        if not self.pulseaudio:
-            return -1
-        sink = self.pulseaudio.sink_list()[0]
-        volume = self.pulseaudio.volume_get_all_chans(sink)
-        volume += 0.1
-        return self.volume_set(int(volume*100))
-
-    def volume_down(self) -> int:
-        if not self.pulseaudio:
-            return -1
-        sink = self.pulseaudio.sink_list()[0]
-        volume = self.pulseaudio.volume_get_all_chans(sink)
-        volume -= 0.1
-        return self.volume_set(int(volume*100))
+    def set_output(self, index: int) -> str:
+        p = subprocess.run(['pactl', 'set-default-sink', str(index)])
+        if p.returncode == 0:
+            return f"sink {index} has been set"
+        else:
+            return f"sink {index} does not exist"
 
     def volume_set(self, volume_pct: int) -> int:
-        if not self.pulseaudio:
-            return -1
-        if volume_pct < 0:
-            volume_pct = 0
-        elif volume_pct > 100:
-            volume_pct = 100
-        volume = float(volume_pct)/100
-        for sink in self.pulseaudio.sink_list():
-            self.pulseaudio.volume_set_all_chans(sink, volume)
+        volume_pct = max(min(volume_pct, 100), 0)
+        for index in self.get_sink_indexes():
+            _ = subprocess.run(['pactl', 'set-sink-volume',
+                               str(index), f"{volume_pct}%"])
         return volume_pct
 
-    def volume_mute(self):
-        return self.volume_set(0)
 
-    # ----------------------------------------------------------
-    # VLC
-    # ----------------------------------------------------------
+class MediaPlayer(object):
     def play(self, url: str, stop_before_play: bool = True):
         if stop_before_play:
             self.stop()

@@ -101,7 +101,7 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
         s = self.get_random_submission(subreddit, query=query)
         if s:
             msg.reply(s.title, status_str=self.get_msg_status(s))
-            AudioPlayer().play(s.url)
+            MediaPlayer().play(s.url)
         else:
             msg.reply(f"cannot find an media in r/{str(subreddit)}",
                       is_error=True)
@@ -114,7 +114,8 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
 class ZulipBotCmdAudioBase(ZulipBotCmdBase):
     def __init__(self, cmd_name: str, help: str, help_args: str = ""):
         super().__init__(cmd_name, help, help_args=help_args)
-        self.audio = AudioPlayer()
+        self.audio = Audio()
+        self.player = MediaPlayer()
         self.help_category = "audio"
 
 
@@ -243,33 +244,22 @@ class ZulipBotCmdAudio(ZulipBotCmdAudioBase):
         subcmd = msg.get_arg(1)
         if subcmd == "set":
             idx = int(msg.get_arg(2))
-            info = self.audio.audio_set_output(idx)
+            info = self.audio.set_output(idx)
             if info:
                 msg.reply(info)
         else:
-            msg.reply(self.audio.audio_get_info())
+            msg.reply(self.audio.get_info())
 
 
 class ZulipBotCmdVolume(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("vol", "change volume",
-                         help_args="mute|up|down|set INT")
+                         help_args="INT")
 
     def process(self, msg: ZulipMsg):
-        subcmd = msg.get_arg(1)
-        if subcmd == "mute":
-            volume = self.audio.volume_mute()
-            msg.reply(f"volume {volume}%")
-        elif subcmd == "up":
-            volume = self.audio.volume_up()
-            msg.reply(f"volume {volume}%")
-        elif subcmd == "down":
-            volume = self.audio.volume_down()
-            msg.reply(f"volume {volume}%")
-        elif subcmd == "set":
-            idx = int(msg.get_arg(2))
-            volume = self.audio.volume_set(idx)
-            msg.reply(f"volume {volume}%")
+        idx = int(msg.get_arg(1))
+        volume = self.audio.volume_set(idx)
+        msg.reply(f"volume {volume}%")
 
 
 class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
@@ -278,7 +268,7 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 
     def process(self, msg: ZulipMsg):
         text = msg.get_arg(-1)
-        self.audio.speak(text, language=msg.get_option('lang', 'fr'))
+        self.player.speak(text, language=msg.get_option('lang', 'fr'))
 
 
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
@@ -292,7 +282,7 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
     def process(self, msg: ZulipMsg):
         url = msg.get_arg(1)
         if url:
-            self.audio.play(url)
+            self.player.play(url)
         elif self.reddit_cmd:
             self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
 
@@ -302,7 +292,7 @@ class ZulipBotCmdStop(ZulipBotCmdAudioBase):
         super().__init__("stop", "stop player")
 
     def process(self, _: ZulipMsg):
-        self.audio.stop()
+        self.player.stop()
 
 
 class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
