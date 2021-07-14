@@ -1,4 +1,3 @@
-import os
 import subprocess
 
 from gtts import gTTS
@@ -40,12 +39,11 @@ class MediaPlayer(object):
     def play(self, url: str, stop_before_play: bool = True):
         if stop_before_play:
             self.stop()
-        cmd = "cvlc --quiet --no-loop --play-and-exit --no-video {}&".format(
-            url)
-        os.system(cmd)
+        subprocess.Popen(["cvlc", "--quiet", "--no-loop", "--play-and-exit",
+                          "--no-video", url])
 
     def stop(self):
-        os.system("pkill vlc")
+        subprocess.run(['pkill', 'vlc'])
 
     def speak(self, text: str, language: str = 'en'):
         file_name = "speak.mp3"
