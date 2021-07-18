@@ -307,7 +307,7 @@ class ZulipBotCmdStop(ZulipBotCmdAudioBase):
 
 class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
     def __init__(self):
-        super().__init__("ytplay", "search and play a video from youtube", help_args="TEXT")
+        super().__init__("yt", "search and play a video from youtube", help_args="TEXT")
         self.cookie_jar = self.create_jar()
 
     def create_jar(self) -> requests.cookies.RequestsCookieJar:
