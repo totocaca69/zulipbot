@@ -289,6 +289,14 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
             self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
 
 
+class ZulipBotCmdPauseResume(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__("pause", "pause|resume the track being played")
+
+    def process(self, _:ZulipMsg):
+        self.player.pause_resume()
+
+
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("stop", "stop player")
