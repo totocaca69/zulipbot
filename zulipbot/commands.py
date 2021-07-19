@@ -1,10 +1,13 @@
 import asyncio
 import json
 import random
-from typing import Optional, Union
+import re
+from typing import Any, Dict, Optional, Union
 
+import bs4
 from praw import Reddit, models
 import python_weather
+import requests
 
 from .audio import *
 from .msg import *
@@ -286,12 +289,68 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
             self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
 
 
+class ZulipBotCmdPauseResume(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__("pause", "pause|resume the track being played")
+
+    def process(self, _:ZulipMsg):
+        self.player.pause_resume()
+
+
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("stop", "stop player")
 
     def process(self, _: ZulipMsg):
         self.player.stop()
+
+class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__("yt", "search and play a video from youtube", help_args="TEXT")
+        self.cookie_jar = self.create_jar()
+
+    def create_jar(self) -> requests.cookies.RequestsCookieJar:
+        jar = requests.cookies.RequestsCookieJar()
+        jar.set("CONSENT", "YES+cb.20210706-13-p0.en+FX+724",
+                domain=".youtube.com",
+                expires="2146723199",  # Sun, 10 Jan 2038 07:59:59 GMT
+                rest={"HttpOnly": True},
+                secure=True
+                )
+        return jar
+
+    def extract_top_result(self, json_dict: Dict[str, Any],
+                           storage: Dict[str, Any]
+                           ) -> Dict[str, Any]:
+        if storage == {}:
+            keys = list(json_dict.keys())
+            if ["videoRenderer"] == keys:
+                storage["id"] = json_dict["videoRenderer"]["videoId"]
+                storage["title"] = json_dict["videoRenderer"]["title"]["runs"][0]["text"]
+        return json_dict
+
+    def process(self, msg: ZulipMsg):
+        yt_url_search_base = "https://www.youtube.com/results?search_query="
+        yt_url_video_base = "https://www.youtube.com/watch?v="
+        raw_search = msg.get_arg(-1)
+        # eliminate potential non-alphanumeric characters
+        keywords = re.split(r"\W+", raw_search)
+        url = yt_url_search_base+"+".join(keywords)
+        # cookies are necessary here, otherwise youtube's consent page is returned
+        ans = requests.get(url, cookies=self.cookie_jar).text
+        soup = bs4.BeautifulSoup(ans, "html.parser")
+        # fetch the json containing the search results and extract the top result
+        scripts = soup.find_all("script")
+        m = re.match(
+            ".+var ytInitialData = ({.+});</script>", str(scripts[32]))
+        top_vid = {}
+        if m is not None:
+            json.loads(m.group(1),
+                       object_hook=lambda yt_dict: self.extract_top_result(yt_dict, top_vid))
+        else:
+            raise ValueError("json array not found !")
+        self.player.play(yt_url_video_base+top_vid["id"])
+        msg.reply("Playing: "+top_vid["title"])
 
 
 # --------------------------------------------------------------
