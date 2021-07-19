@@ -304,7 +304,6 @@ class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def process(self, _: ZulipMsg):
         self.player.stop()
 
-
 class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
     def __init__(self):
         super().__init__("yt", "search and play a video from youtube", help_args="TEXT")
