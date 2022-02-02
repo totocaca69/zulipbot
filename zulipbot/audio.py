@@ -45,12 +45,6 @@ class MediaPlayer(object):
     def stop(self):
         subprocess.run(['pkill', 'vlc'])
 
-    def pause_resume(self):
-        subprocess.run(['dbus-send',  '--session',
-                        '--dest=org.mpris.MediaPlayer2.vlc',
-                        '/org/mpris/MediaPlayer2',
-                        'org.mpris.MediaPlayer2.Player.PlayPause'])
-
     def speak(self, text: str, language: str = 'en'):
         file_name = "speak.mp3"
         myobj = gTTS(text=text, lang=language, slow=False)

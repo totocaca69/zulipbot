@@ -64,10 +64,13 @@ class ZulipBotCmdRedditBase(ZulipBotCmdBase):
             subr = self.reddit.subreddit(subreddit)
         else:
             subr = subreddit
-        query = "nsfw:no subreddit:{} {}".format(str(subr), query)
+        query_list = ["nsfw:no", f"subreddit:{subr}"]
+        if query:
+            query_list.append(query)
+        q = " AND ".join(query_list)
         idx = random.randint(1, limit)
         submission = None
-        for submission in subr.search(query, sort=sort, limit=idx):
+        for submission in subr.search(q, sort=sort, limit=idx):
             pass
         return submission
 
@@ -287,14 +290,6 @@ class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
             self.player.play(url)
         elif self.reddit_cmd:
             self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
-
-
-class ZulipBotCmdPauseResume(ZulipBotCmdAudioBase):
-    def __init__(self):
-        super().__init__("pause", "pause|resume the track being played")
-
-    def process(self, _:ZulipMsg):
-        self.player.pause_resume()
 
 
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
