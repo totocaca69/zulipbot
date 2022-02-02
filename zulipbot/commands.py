@@ -183,7 +183,6 @@ class ZulipBotCmdRepeat(ZulipBotCmdBase):
 
 class ZulipBotCmdBot(ZulipBotCmdBase):
     def __init__(self, bot_dict: dict):
-        super().__init__("bot", "repeat last command")
         super().__init__("bot", "robot info and actions",
                          help_args="on|off|info")
         self.bot_dict = bot_dict
@@ -298,6 +297,7 @@ class ZulipBotCmdStop(ZulipBotCmdAudioBase):
 
     def process(self, _: ZulipMsg):
         self.player.stop()
+
 
 class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
     def __init__(self):
