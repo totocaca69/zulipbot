@@ -157,8 +157,7 @@ class ZulipBotCmdRepeat(ZulipBotCmdBase):
     def __init__(self, cmds: list[ZulipBotCmdBase]):
         super().__init__("repeat", "repeat last command")
         self.cmds = cmds
-        self.prev_cmd = None
-        self.prev_msg = None
+        self.prev_cmd_msg: Optional[ZulipMsg] = None
 
     def get_cmd(self, cmd_name: str) -> Optional[ZulipBotCmdBase]:
         for cmd in self.cmds:
@@ -171,14 +170,14 @@ class ZulipBotCmdRepeat(ZulipBotCmdBase):
 
     def process(self, msg: ZulipMsg):
         if msg.is_valid_cmd(self.cmd_name):
-            if self.prev_cmd and self.prev_msg:
-                self.prev_cmd.process(self.prev_msg)
+            if self.prev_cmd_msg:
+                cmd = self.get_cmd(self.prev_cmd_msg.get_arg(0))
+                if cmd:
+                    cmd.process(self.prev_cmd_msg)
             else:
                 msg.reply("no previous command", is_error=True)
         else:
-            cmd_name = msg.get_arg(0)
-            self.prev_cmd = self.get_cmd(cmd_name)
-            self.prev_msg = msg
+            self.prev_cmd_msg = msg
 
 
 class ZulipBotCmdBot(ZulipBotCmdBase):
@@ -198,6 +197,56 @@ class ZulipBotCmdBot(ZulipBotCmdBase):
         elif subcmd == "info":
             d = self.bot_dict.copy()
             msg.reply(json.dumps(d, indent=4))
+
+
+class ZulipBotCmdAlias(ZulipBotCmdBase):
+    def __init__(self, cmds: list[ZulipBotCmdBase]):
+        super().__init__("a", "create/run aliases", help_args="[ALIAS_NAME] [--create]")
+        self.cmds = cmds
+        self.prev_cmd_msg: Optional[ZulipMsg] = None
+        self.alias_to_cmd = {}
+
+    def get_cmd(self, cmd_name: str) -> Optional[ZulipBotCmdBase]:
+        for cmd in self.cmds:
+            if cmd.cmd_name == cmd_name:
+                return cmd
+
+    def is_to_be_processed(self, msg: ZulipMsg) -> bool:
+        cmd_name_list = [cmd.cmd_name for cmd in self.cmds]
+        return msg.is_valid_cmd(cmd_name_list)
+
+    def create_alias(self, alias: str, msg: ZulipMsg):
+        if not alias:
+            msg.reply("alias is empty", is_error=True)
+            return
+        if self.prev_cmd_msg :
+            if self.prev_cmd_msg.get_arg(0) != self.cmd_name:
+                self.alias_to_cmd[alias] = self.prev_cmd_msg
+                msg.reply(f"alias {alias} to {self.prev_cmd_msg.raw_content}")
+            else:
+                msg.reply(f"previous command is {self.cmd_name}", is_error=True)
+        else:
+            msg.reply("no previous command", is_error=True)
+
+    def process(self, msg: ZulipMsg):
+        if msg.is_valid_cmd(self.cmd_name):
+            alias = msg.get_arg(1)
+            create = msg.get_option("create", False)
+            if create:
+                self.create_alias(alias, msg)
+            else:
+                if alias in self.alias_to_cmd:
+                    msg = self.alias_to_cmd[alias]
+                    cmd = self.get_cmd(msg.get_arg(0))
+                    if cmd:
+                        cmd.process(msg)
+                else:
+                    list_str = "aliases:"
+                    for alias in self.alias_to_cmd:
+                        list_str += f"\n{alias:10s} {self.alias_to_cmd[alias].raw_content}"
+                    msg.reply(list_str)
+        else:
+            self.prev_cmd_msg = msg
 
 
 class ZulipBotCmdGnagnagna(ZulipBotCmdBase):

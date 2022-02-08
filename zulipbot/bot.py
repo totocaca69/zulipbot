@@ -25,6 +25,7 @@ class ZulipBot(object):
         self.add_cmd(ZulipBotCmdHelp(self.cmds))
         self.add_cmd(ZulipBotCmdRepeat(self.cmds))
         self.add_cmd(ZulipBotCmdBot(self.shared_dict))
+        self.add_cmd(ZulipBotCmdAlias(self.cmds))
 
     def create_shared_dict(self):
         self.shared_dict: dict = self.manager.dict()

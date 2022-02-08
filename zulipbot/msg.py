@@ -18,6 +18,7 @@ class ZulipMsg(object):
                  msg: dict):
         self.client = client
         self.msg_filter = msg_filter
+        self.raw_content = msg['content']
         self.msg = msg
         self.cmd_options: dict[str, Union[str, bool]] \
             = self.parse_cmd_options()
