@@ -1,6 +1,6 @@
 import asyncio
 import json
-import os.path
+import os
 import random
 from typing import Optional, Union
 
@@ -359,20 +359,43 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 
 
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
-    def __init__(self, reddit: Optional[Reddit] = None):
+    def __init__(self):
         super().__init__(
-            "play", "play audio from url or r/listentothis", help_args="[URL]")
-        self.reddit_cmd = None
-        if reddit:
-            self.reddit_cmd = ZulipBotCmdRedditBase(reddit, '', '')
+            "play", "play audio from url or recorded samples", help_args="[URL]")
 
     def process(self, msg: ZulipMsg):
         url = msg.get_arg(1)
         if url:
             self.player.play(url)
-        elif self.reddit_cmd:
-            self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
+        else:
+            record_str = "recorded samples:\n  "
+            record_str += "\n  ".join(self.player.list_records())
+            msg.reply(record_str)
 
+
+class ZulipBotCmdRecord(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__(
+            "rec", "record audio samples of 5 sec", help_args="[NAME] [--delete]")
+
+    def process(self, msg: ZulipMsg):
+        name = msg.get_arg(1)
+        delete = msg.get_option("delete", False)
+        records_list = self.player.list_records()
+        if name:
+            if delete:
+                if name in records_list:
+                    os.remove(f"{self.player.record_dir}/{name}.wav")
+                    msg.reply(f"record {name} has been deleted")
+                else:
+                    msg.reply(f"{name} record does not exist", is_error=True)
+            else:
+                msg.reply(f"record {name} for 5 sec")
+                self.player.record(name)
+        else:
+            record_str = "recorded samples:\n  "
+            record_str += "\n  ".join(records_list)
+            msg.reply(record_str)
 
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def __init__(self):
