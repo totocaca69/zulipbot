@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os.path
 import random
 from typing import Optional, Union
 
@@ -14,6 +15,9 @@ from .msg import *
 # base clases
 # --------------------------------------------------------------
 class ZulipBotCmdBase(object):
+    cmd_dir = "data/cmd"
+    subprocess.run(["mkdir", "-p", cmd_dir])
+
     def __init__(self, cmd_name: str, help: str, help_args: str = ""):
         self.cmd_name = cmd_name
         self.help = help
@@ -30,6 +34,22 @@ class ZulipBotCmdBase(object):
     def process(self, msg: ZulipMsg):
         print(msg)
         return
+
+    def dict_load(self, name: str = "") -> dict:
+        if not name:
+            name = self.cmd_name
+        path = f"{self.cmd_dir}/{name}.json"
+        if os.path.exists(path):
+            with open(path, 'r') as fp:
+                return json.load(fp)
+        else:
+            return {}
+
+    def dict_save(self, d: dict, name: str = ""):
+        if not name:
+            name = self.cmd_name
+        with open(f"{self.cmd_dir}/{name}.json", 'w') as fp:
+            json.dump(d, fp, indent=4)
 
 
 class ZulipBotCmdRedditBase(ZulipBotCmdBase):
@@ -135,7 +155,7 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         # commands help
         for cmd in self.cmds:
             help_list = help_list_from_category.get(cmd.help_category, [])
-            help_list.append("!{:10s} {:25s} : {}".format(
+            help_list.append("!{:10s} {:35} : {}".format(
                 cmd.cmd_name, cmd.help_args, cmd.help))
             help_list_from_category[cmd.help_category] = help_list
         # common options
@@ -199,10 +219,10 @@ class ZulipBotCmdBot(ZulipBotCmdBase):
 class ZulipBotCmdAlias(ZulipBotCmdBase):
     def __init__(self, cmds: list[ZulipBotCmdBase]):
         super().__init__("a", "create/run aliases",
-                         help_args="[ALIAS_NAME] [--create]")
+                         help_args="[ALIAS_NAME] [--create|--delete]")
         self.cmds = cmds
         self.prev_cmd_msg: Optional[ZulipMsg] = None
-        self.alias_to_cmd = {}
+        self.aliases = self.dict_load()
 
     def get_cmd(self, cmd_name: str) -> Optional[ZulipBotCmdBase]:
         for cmd in self.cmds:
@@ -213,37 +233,52 @@ class ZulipBotCmdAlias(ZulipBotCmdBase):
         cmd_name_list = [cmd.cmd_name for cmd in self.cmds]
         return msg.is_valid_cmd(cmd_name_list)
 
-    def create_alias(self, alias: str, msg: ZulipMsg):
-        if not alias:
-            msg.reply("alias is empty", is_error=True)
+    def create_alias(self, alias_name: str, msg: ZulipMsg):
+        if not alias_name:
+            msg.reply("alias_name is empty", is_error=True)
             return
         if self.prev_cmd_msg:
             if self.prev_cmd_msg.get_arg(0) != self.cmd_name:
-                self.alias_to_cmd[alias] = self.prev_cmd_msg
-                msg.reply(f"alias {alias} to {self.prev_cmd_msg.raw_content}")
+                self.aliases[alias_name] = self.prev_cmd_msg.raw_content
+                msg.reply(
+                    f"alias {alias_name} to {self.prev_cmd_msg.raw_content}")
             else:
                 msg.reply(
                     f"previous command is {self.cmd_name}", is_error=True)
         else:
             msg.reply("no previous command", is_error=True)
 
+    def run_alias(self, alias_name: str, msg: ZulipMsg):
+        if not alias_name:
+            msg.reply("alias_name is empty", is_error=True)
+            return
+        m = msg.msg.copy()
+        m['content'] = self.aliases[alias_name]
+        new_msg = ZulipMsg(msg.client, msg.msg_filter, m)
+        cmd = self.get_cmd(new_msg.get_arg(0))
+        if cmd:
+            cmd.process(new_msg)
+
     def process(self, msg: ZulipMsg):
         if msg.is_valid_cmd(self.cmd_name):
-            alias = msg.get_arg(1)
+            alias_name = msg.get_arg(1)
             create = msg.get_option("create", False)
+            delete = msg.get_option("delete", False)
             if create:
-                self.create_alias(alias, msg)
+                self.create_alias(alias_name, msg)
+                self.dict_save(self.aliases)
+            elif delete:
+                if alias_name in self.aliases:
+                    self.aliases.pop(alias_name)
+                    self.dict_save(self.aliases)
+                    msg.reply(f"alias {alias_name} has been deleted")
+            elif alias_name in self.aliases:
+                self.run_alias(alias_name, msg)
             else:
-                if alias in self.alias_to_cmd:
-                    msg = self.alias_to_cmd[alias]
-                    cmd = self.get_cmd(msg.get_arg(0))
-                    if cmd:
-                        cmd.process(msg)
-                else:
-                    list_str = "aliases:"
-                    for alias in self.alias_to_cmd:
-                        list_str += f"\n{alias:10s} {self.alias_to_cmd[alias].raw_content}"
-                    msg.reply(list_str)
+                list_str = "aliases:"
+                for alias_name in self.aliases:
+                    list_str += f"\n{alias_name:10s} {self.aliases[alias_name]}"
+                msg.reply(list_str)
         else:
             self.prev_cmd_msg = msg
 
