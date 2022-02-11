@@ -1,13 +1,11 @@
 import asyncio
 import json
+import os
 import random
-import re
-from typing import Any, Dict, Optional, Union
+from typing import Optional, Union
 
-import bs4
 from praw import Reddit, models
 import python_weather
-import requests
 
 from .audio import *
 from .msg import *
@@ -17,6 +15,9 @@ from .msg import *
 # base clases
 # --------------------------------------------------------------
 class ZulipBotCmdBase(object):
+    cmd_dir = "data/cmd"
+    subprocess.run(["mkdir", "-p", cmd_dir])
+
     def __init__(self, cmd_name: str, help: str, help_args: str = ""):
         self.cmd_name = cmd_name
         self.help = help
@@ -33,6 +34,22 @@ class ZulipBotCmdBase(object):
     def process(self, msg: ZulipMsg):
         print(msg)
         return
+
+    def dict_load(self, name: str = "") -> dict:
+        if not name:
+            name = self.cmd_name
+        path = f"{self.cmd_dir}/{name}.json"
+        if os.path.exists(path):
+            with open(path, 'r') as fp:
+                return json.load(fp)
+        else:
+            return {}
+
+    def dict_save(self, d: dict, name: str = ""):
+        if not name:
+            name = self.cmd_name
+        with open(f"{self.cmd_dir}/{name}.json", 'w') as fp:
+            json.dump(d, fp, indent=4)
 
 
 class ZulipBotCmdRedditBase(ZulipBotCmdBase):
@@ -138,7 +155,7 @@ class ZulipBotCmdHelp(ZulipBotCmdBase):
         # commands help
         for cmd in self.cmds:
             help_list = help_list_from_category.get(cmd.help_category, [])
-            help_list.append("!{:10s} {:25s} : {}".format(
+            help_list.append("!{:10s} {:35} : {}".format(
                 cmd.cmd_name, cmd.help_args, cmd.help))
             help_list_from_category[cmd.help_category] = help_list
         # common options
@@ -201,10 +218,11 @@ class ZulipBotCmdBot(ZulipBotCmdBase):
 
 class ZulipBotCmdAlias(ZulipBotCmdBase):
     def __init__(self, cmds: list[ZulipBotCmdBase]):
-        super().__init__("a", "create/run aliases", help_args="[ALIAS_NAME] [--create]")
+        super().__init__("a", "create/run aliases",
+                         help_args="[ALIAS_NAME] [--create|--delete]")
         self.cmds = cmds
         self.prev_cmd_msg: Optional[ZulipMsg] = None
-        self.alias_to_cmd = {}
+        self.aliases = self.dict_load()
 
     def get_cmd(self, cmd_name: str) -> Optional[ZulipBotCmdBase]:
         for cmd in self.cmds:
@@ -215,36 +233,52 @@ class ZulipBotCmdAlias(ZulipBotCmdBase):
         cmd_name_list = [cmd.cmd_name for cmd in self.cmds]
         return msg.is_valid_cmd(cmd_name_list)
 
-    def create_alias(self, alias: str, msg: ZulipMsg):
-        if not alias:
-            msg.reply("alias is empty", is_error=True)
+    def create_alias(self, alias_name: str, msg: ZulipMsg):
+        if not alias_name:
+            msg.reply("alias_name is empty", is_error=True)
             return
-        if self.prev_cmd_msg :
+        if self.prev_cmd_msg:
             if self.prev_cmd_msg.get_arg(0) != self.cmd_name:
-                self.alias_to_cmd[alias] = self.prev_cmd_msg
-                msg.reply(f"alias {alias} to {self.prev_cmd_msg.raw_content}")
+                self.aliases[alias_name] = self.prev_cmd_msg.raw_content
+                msg.reply(
+                    f"alias {alias_name} to {self.prev_cmd_msg.raw_content}")
             else:
-                msg.reply(f"previous command is {self.cmd_name}", is_error=True)
+                msg.reply(
+                    f"previous command is {self.cmd_name}", is_error=True)
         else:
             msg.reply("no previous command", is_error=True)
 
+    def run_alias(self, alias_name: str, msg: ZulipMsg):
+        if not alias_name:
+            msg.reply("alias_name is empty", is_error=True)
+            return
+        m = msg.msg.copy()
+        m['content'] = self.aliases[alias_name]
+        new_msg = ZulipMsg(msg.client, msg.msg_filter, m)
+        cmd = self.get_cmd(new_msg.get_arg(0))
+        if cmd:
+            cmd.process(new_msg)
+
     def process(self, msg: ZulipMsg):
         if msg.is_valid_cmd(self.cmd_name):
-            alias = msg.get_arg(1)
+            alias_name = msg.get_arg(1)
             create = msg.get_option("create", False)
+            delete = msg.get_option("delete", False)
             if create:
-                self.create_alias(alias, msg)
+                self.create_alias(alias_name, msg)
+                self.dict_save(self.aliases)
+            elif delete:
+                if alias_name in self.aliases:
+                    self.aliases.pop(alias_name)
+                    self.dict_save(self.aliases)
+                    msg.reply(f"alias {alias_name} has been deleted")
+            elif alias_name in self.aliases:
+                self.run_alias(alias_name, msg)
             else:
-                if alias in self.alias_to_cmd:
-                    msg = self.alias_to_cmd[alias]
-                    cmd = self.get_cmd(msg.get_arg(0))
-                    if cmd:
-                        cmd.process(msg)
-                else:
-                    list_str = "aliases:"
-                    for alias in self.alias_to_cmd:
-                        list_str += f"\n{alias:10s} {self.alias_to_cmd[alias].raw_content}"
-                    msg.reply(list_str)
+                list_str = "aliases:"
+                for alias_name in self.aliases:
+                    list_str += f"\n{alias_name:10s} {self.aliases[alias_name]}"
+                msg.reply(list_str)
         else:
             self.prev_cmd_msg = msg
 
@@ -325,20 +359,43 @@ class ZulipBotCmdSpeak(ZulipBotCmdAudioBase):
 
 
 class ZulipBotCmdPlay(ZulipBotCmdAudioBase):
-    def __init__(self, reddit: Optional[Reddit] = None):
+    def __init__(self):
         super().__init__(
-            "play", "play audio from url or r/listentothis", help_args="[URL]")
-        self.reddit_cmd = None
-        if reddit:
-            self.reddit_cmd = ZulipBotCmdRedditBase(reddit, '', '')
+            "play", "play audio from url or recorded samples", help_args="[URL]")
 
     def process(self, msg: ZulipMsg):
         url = msg.get_arg(1)
         if url:
             self.player.play(url)
-        elif self.reddit_cmd:
-            self.reddit_cmd.play_random_media_audio(msg, 'listentothis')
+        else:
+            record_str = "recorded samples:\n  "
+            record_str += "\n  ".join(self.player.list_records())
+            msg.reply(record_str)
 
+
+class ZulipBotCmdRecord(ZulipBotCmdAudioBase):
+    def __init__(self):
+        super().__init__(
+            "rec", "record audio samples of 5 sec", help_args="[NAME] [--delete]")
+
+    def process(self, msg: ZulipMsg):
+        name = msg.get_arg(1)
+        delete = msg.get_option("delete", False)
+        records_list = self.player.list_records()
+        if name:
+            if delete:
+                if name in records_list:
+                    os.remove(f"{self.player.record_dir}/{name}.wav")
+                    msg.reply(f"record {name} has been deleted")
+                else:
+                    msg.reply(f"{name} record does not exist", is_error=True)
+            else:
+                msg.reply(f"record {name} for 5 sec")
+                self.player.record(name)
+        else:
+            record_str = "recorded samples:\n  "
+            record_str += "\n  ".join(records_list)
+            msg.reply(record_str)
 
 class ZulipBotCmdStop(ZulipBotCmdAudioBase):
     def __init__(self):
@@ -346,55 +403,6 @@ class ZulipBotCmdStop(ZulipBotCmdAudioBase):
 
     def process(self, _: ZulipMsg):
         self.player.stop()
-
-
-class ZulipBotCmdYTPlay(ZulipBotCmdAudioBase):
-    def __init__(self):
-        super().__init__("yt", "search and play a video from youtube", help_args="TEXT")
-        self.cookie_jar = self.create_jar()
-
-    def create_jar(self) -> requests.cookies.RequestsCookieJar:
-        jar = requests.cookies.RequestsCookieJar()
-        jar.set("CONSENT", "YES+cb.20210706-13-p0.en+FX+724",
-                domain=".youtube.com",
-                expires="2146723199",  # Sun, 10 Jan 2038 07:59:59 GMT
-                rest={"HttpOnly": True},
-                secure=True
-                )
-        return jar
-
-    def extract_top_result(self, json_dict: Dict[str, Any],
-                           storage: Dict[str, Any]
-                           ) -> Dict[str, Any]:
-        if storage == {}:
-            keys = list(json_dict.keys())
-            if ["videoRenderer"] == keys:
-                storage["id"] = json_dict["videoRenderer"]["videoId"]
-                storage["title"] = json_dict["videoRenderer"]["title"]["runs"][0]["text"]
-        return json_dict
-
-    def process(self, msg: ZulipMsg):
-        yt_url_search_base = "https://www.youtube.com/results?search_query="
-        yt_url_video_base = "https://www.youtube.com/watch?v="
-        raw_search = msg.get_arg(-1)
-        # eliminate potential non-alphanumeric characters
-        keywords = re.split(r"\W+", raw_search)
-        url = yt_url_search_base+"+".join(keywords)
-        # cookies are necessary here, otherwise youtube's consent page is returned
-        ans = requests.get(url, cookies=self.cookie_jar).text
-        soup = bs4.BeautifulSoup(ans, "html.parser")
-        # fetch the json containing the search results and extract the top result
-        scripts = soup.find_all("script")
-        m = re.match(
-            ".+var ytInitialData = ({.+});</script>", str(scripts[32]))
-        top_vid = {}
-        if m is not None:
-            json.loads(m.group(1),
-                       object_hook=lambda yt_dict: self.extract_top_result(yt_dict, top_vid))
-        else:
-            raise ValueError("json array not found !")
-        self.player.play(yt_url_video_base+top_vid["id"])
-        msg.reply("Playing: "+top_vid["title"])
 
 
 # --------------------------------------------------------------

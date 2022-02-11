@@ -1,3 +1,5 @@
+import glob
+import os.path
 import subprocess
 
 from gtts import gTTS
@@ -36,17 +38,36 @@ class Audio(object):
 
 
 class MediaPlayer(object):
+    record_dir = "data/MediaPlayer/record"
+    speak_dir = "data/MediaPlayer/speak"
+    subprocess.run(["mkdir", "-p", record_dir])
+    subprocess.run(["mkdir", "-p", speak_dir])
+
     def play(self, url: str, stop_before_play: bool = True):
         if stop_before_play:
             self.stop()
+        path = f"{self.record_dir}/{url}.wav"
+        if os.path.exists(path):
+            url = path
         subprocess.Popen(["cvlc", "--quiet", "--no-loop", "--play-and-exit",
                           "--no-video", url])
+
+    def record(self, file_name: str):
+        cmd = f"arecord -f S16_LE -r44100 -t wav -d 5"
+        subprocess.Popen(cmd.split() + [f"{self.record_dir}/{file_name}.wav"])
+
+    def list_records(self) -> list[str]:
+        r = []
+        for path in glob.glob(f"{self.record_dir}/*.wav"):
+            filename = path.split('/')[-1]
+            r.append(filename.removesuffix('.wav'))
+        return r
 
     def stop(self):
         subprocess.run(['pkill', 'vlc'])
 
     def speak(self, text: str, language: str = 'en'):
-        file_name = "speak.mp3"
+        file_name = f"{self.speak_dir}/speak.mp3"
         myobj = gTTS(text=text, lang=language, slow=False)
         myobj.save(file_name)
         self.play(file_name, stop_before_play=False)
