@@ -547,10 +547,8 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
         # Check if there is already a cached result for today
         cache_modif_date = self.get_modif_date(cache_file)
         if cache_modif_date == lunch_date:
-            print("Loading cache")
             self.foodtrucks = self.dict_load(cache_file)
         else :
-            print("Sending request")
             r = requests.get("https://api.hellotrucks.app/1.0/slots/search", params=params)
             if r.status_code != 200:
                 raise requests.RequestException(f"Invalid response: {r.status_code}")
@@ -568,5 +566,4 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
                 truck_info["distance"] = self.get_travel_distance(self.office_location, truck_info)
                 self.foodtrucks.append(truck_info)
             if lunch_date == date.today().strftime("%Y-%m-%d"):
-                print("writing cache")
                 self.dict_save(self.foodtrucks, cache_file)
