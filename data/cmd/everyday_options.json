@@ -1,0 +1,99 @@
+[
+  {"name" : "Pizzas du longchamp",
+   "type": ["pizza"],
+   "lat":48.13064659937165,
+   "lng": -1.6329590582836586
+  },
+  {"name": "Class croute",
+   "type": ["sandwichs", "salades"],
+   "site": "https://www.classcroute.com/page/region/bretagne/restaurant/cesson-sevigne",
+   "lat": 48.13055237390367,
+   "lng": -1.6223084871189877
+  },
+  {
+    "name": "Boulangerie Amande",
+    "type": ["sandwichs", "burgers", "fougasses", "quiches"],
+    "lat":48.131730652931545,
+    "lng": -1.6208676889661424
+  },
+  {
+    "name": "Italian trattoria",
+    "type": ["pizzas", "pates"],
+    "site": "https://it-trattoria.com/",
+    "lat": 48.13228563013667,
+    "lng": -1.6200488601308147
+  },
+  {
+    "name": "Creperie B8",
+    "type": ["crepes", "plats chauds"],
+    "site": "https://www.creperie-b8.com/",
+    "lat": 48.13216778805565,
+    "lng": -1.6201229582835746
+  },
+  {
+    "name": "Whitefields",
+    "type": ["pizzas", "pates", "salades", "bobun", "pad thai", "burgers", "steaks"],
+    "site": "https://whitefields-cafe.com/",
+    "lat": 48.135283743378466,
+    "lng": -1.6222883871187777
+  },
+  {
+    "name": "Boucherie Maurice",
+    "type": ["burgers", "steaks"],
+    "site": "https://www.boucheriemaurice.fr/",
+    "lat": 48.135558501212266,
+    "lng": -1.6254721754719443
+  },
+  {
+    "name":"Boulangerie Augustin",
+    "type": ["quiche", "sandwichs", "tacos"],
+    "lat": 48.135441142066114,
+    "lng": -1.6256379178012985
+  },
+  {
+    "name": "Green sur mesure",
+    "type": ["salades", "sandwichs"],
+    "site": "http://www.greensurmesure.fr/",
+    "lat": 48.13568664134715,
+    "lng": -1.6253063601306506
+  },
+  {
+    "name": "Onolulu poke bar",
+    "type": ["bowls"],
+    "site": "https://onoluluresto.com/",
+    "lat": 48.1357935612294,
+    "lng": -1.6250636159540812
+  },
+  {
+    "name": "Boulangerie Longchamp",
+    "type": ["sandwichs", "paninis"],
+    "lat":48.13064659937165,
+    "lng": -1.6329590582836586
+  },
+  {
+    "name": "Creperie du longchamp",
+    "type": ["galettes", "crepes", "sandwichs"],
+    "site": "https://www.creperielaterrasse.fr/",
+    "lat":48.13064659937165,
+    "lng": -1.6329590582836586
+  },
+  {
+    "name": "La dejeunerie",
+    "type": ["burgers", "sandwichs"],
+    "lat":48.13064659937165,
+    "lng": -1.6329590582836586
+  },
+  {
+    "name": "Le comptoir venitien",
+    "type": ["pizzas", "salades", "burgers"],
+    "site": "https://www.au-comptoir-venitien.fr/",
+    "lat":48.13064659937165,
+    "lng": -1.6329590582836586
+  },
+  {
+    "name": "Intermarche Les Longchamps",
+    "type": ["paninis", "sandwichs", "sushis", "salades"],
+    "lat":48.13064659937165,
+    "lng": -1.6329590582836586
+  }
+]

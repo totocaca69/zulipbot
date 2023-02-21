@@ -2,6 +2,8 @@ import asyncio
 import json
 import os
 import random
+import requests
+from datetime import date, datetime
 from typing import Optional, Union
 
 from praw import Reddit, models
@@ -470,3 +472,101 @@ class ZulipBotCmdRedPlay(ZulipBotCmdRedditBase):
     def process(self, msg: ZulipMsg):
         subreddit = self.get_subreddit_from_msg(msg)
         self.play_random_media_audio(msg, subreddit, query="url:youtube")
+
+class ZulipBotCmdLunch(ZulipBotCmdBase):
+
+    office_location = {"lat": 48.131675092423755, "lng": -1.6232891871189372}
+
+    def __init__(self):
+        super().__init__("lunch", "display nearby lunch options for a specific day",
+                         help_args="[dd/mm]")
+        self.foodtrucks = []
+        self.everyday_options = self.dict_load("everyday_options")
+
+        for option in self.everyday_options:
+            option["distance"] = self.get_travel_distance(self.office_location, option)
+
+    @staticmethod
+    def get_travel_distance(start, end):
+        params = {
+            "overview": "false",
+            "alternatives": "false",
+            "steps": "false"
+        }
+        r = requests.get(
+            f"http://router.project-osrm.org/route/v1/foot/{start['lng']},{start['lat']};{end['lng']},{end['lat']}",
+            params=params)
+        travel = r.json()
+        return travel["routes"][0]["legs"][0]["distance"]
+
+    @staticmethod
+    def format_destination(destination):
+        pin_url = f"https://www.google.com/maps/search/?api=1&query={destination['lat']},{destination['lng']}"
+        return f"|[{destination['name']}]({pin_url})|{','.join(destination['type'])}|{destination['distance']}|\n"
+
+    def process(self, msg: ZulipMsg):
+        lunch_date = msg.get_arg(1)
+        today = date.today()
+        if lunch_date ==  "":
+            lunch_date = today.strftime("%Y-%m-%d")
+        else:
+            day, month = lunch_date.split('/')
+            lunch_date = f"{today.year}-{month}-{day}"
+
+        try:
+            self.get_nearby_foodtrucks(lunch_date)
+            table = "|Nom| Plats | Distance(m)|\n|---|-------|---------|\n"
+            for option in self.everyday_options:
+                table += self.format_destination(option)
+
+            for truck in self.foodtrucks:
+                table += self.format_destination(truck)
+
+            msg.reply(table, fenced_code_block = False, with_prefix = False)
+        except Exception as e:
+            msg.reply(str(e))
+
+    def get_modif_date(self, file):
+        path = f"{self.cmd_dir}/{file}.json"
+        try:
+            timestamp = os.path.getmtime(path)
+        except FileNotFoundError:
+            return ""
+        date_obj = datetime.fromtimestamp(timestamp)
+        return date_obj.strftime("%Y-%m-%d")
+
+    def get_nearby_foodtrucks(self, lunch_date):
+        params = {
+            "lat": self.office_location["lat"],
+            "lng": self.office_location["lng"],
+            "distance": 1000,
+            "date": lunch_date,
+            "time": "noon"
+        }
+        cache_file = "today"
+        # Check if there is already a cached result for today
+        cache_modif_date = self.get_modif_date(cache_file)
+        if cache_modif_date == lunch_date:
+            print("Loading cache")
+            self.foodtrucks = self.dict_load(cache_file)
+        else :
+            print("Sending request")
+            r = requests.get("https://api.hellotrucks.app/1.0/slots/search", params=params)
+            if r.status_code != 200:
+                raise requests.RequestException(f"Invalid response: {r.status_code}")
+            trucks = r.json()["items"]
+            self.foodtrucks = []
+            for truck in trucks:
+                lat = truck["place"]["position"][1]
+                lng = truck["place"]["position"][0]
+                truck_info = {
+                        "name": truck["label"],
+                        "type": truck["cuisines"],
+                        "lat": lat,
+                        "lng": lng
+                        }
+                truck_info["distance"] = self.get_travel_distance(self.office_location, truck_info)
+                self.foodtrucks.append(truck_info)
+            if lunch_date == date.today().strftime("%Y-%m-%d"):
+                print("writing cache")
+                self.dict_save(self.foodtrucks, cache_file)

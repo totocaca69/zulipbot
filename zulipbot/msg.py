@@ -90,7 +90,8 @@ class ZulipMsg(object):
               speak: bool = False,
               speak_lang: str = 'en',
               status_str: str = "",
-              use_options: bool = True):
+              use_options: bool = True,
+              with_prefix=True):
         if use_options:
             speak = self.get_option('speak', speak)
             speak_lang = self.get_option('lang', speak_lang)
@@ -116,5 +117,8 @@ class ZulipMsg(object):
                 return
             if fenced_code_block:
                 txt = "```\n{}\n```".format(txt)
-            rep["content"] = "{}\n{}".format(prefix, txt)
+            if with_prefix:
+                rep["content"] = "{}\n{}".format(prefix, txt)
+            else:
+                rep["content"] = txt
             self.client.send_message(rep)
