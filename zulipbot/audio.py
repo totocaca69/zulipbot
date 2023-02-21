@@ -53,7 +53,8 @@ class MediaPlayer(object):
                           "--no-video", url])
 
     def record(self, file_name: str):
-        cmd = f"arecord -f S16_LE -r44100 -t wav -d 5"
+        cmd = f"arecord -D hw:2,0 -f S16_LE -r44100 -t wav -d 5"
+        print(cmd.split() + [f"{self.record_dir}/{file_name}.wav"])
         subprocess.Popen(cmd.split() + [f"{self.record_dir}/{file_name}.wav"])
 
     def list_records(self) -> list[str]:
