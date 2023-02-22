@@ -1,5 +1,5 @@
 import re
-from typing import Any, Union
+from typing import Any, Union, List, Dict
 
 import zulip
 
@@ -14,10 +14,10 @@ class ZulipMsg(object):
 
     def __init__(self,
                  client: zulip.Client,
-                 msg_filter: dict,
+                 msg_filters: List[Dict[str, str]],
                  msg: dict):
         self.client = client
-        self.msg_filter = msg_filter
+        self.msg_filters = msg_filters
         self.raw_content = msg['content']
         self.msg = msg
         self.cmd_options: dict[str, Union[str, bool]] \
@@ -72,10 +72,16 @@ class ZulipMsg(object):
 
     def is_valid(self) -> bool:
         not_a_robot = self.msg['content'].split()[0] != self.robot_prefix
-        valid = True
-        for key in self.msg_filter.keys():
-            if key not in self.msg.keys() or self.msg[key] != self.msg_filter[key]:
-                valid = False
+        valid = False
+        for msg_filter in self.msg_filters:
+            if not msg_filter:
+                continue
+            valid = True
+            for key in msg_filter.keys():
+                if key not in self.msg.keys() or self.msg[key] != msg_filter[key]:
+                    valid = False
+                    break
+            if valid:
                 break
         return not_a_robot and valid
 

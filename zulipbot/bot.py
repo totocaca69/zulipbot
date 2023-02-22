@@ -1,5 +1,6 @@
 import getpass
 from multiprocessing import Manager, Process, Queue
+from typing import List, Dict
 import socket
 
 import zulip
@@ -8,13 +9,13 @@ from .audio import *
 from .commands import *
 from .msg import *
 
-
 class ZulipBot(object):
     """get messages, process, reply"""
 
-    def __init__(self, client: zulip.Client, msg_filter: dict):
+    def __init__(self, client: zulip.Client, msg_filters: List[Dict[str, str]]):
+        self.gg_idx = 0
         self.client = client
-        self.msg_filter = msg_filter
+        self.msg_filters = msg_filters
         self.cmds: list[ZulipBotCmdBase] = []
         self.msg_queues: dict[str, Queue] = {}
         Audio().volume_set(50)
@@ -60,7 +61,7 @@ class ZulipBot(object):
                 self.run_cmd(cmd, msg)
 
     def fill_queues(self, m):
-        msg = ZulipMsg(self.client, self.msg_filter, m)
+        msg = ZulipMsg(self.client, self.msg_filters, m)
         for cmd in self.cmds:
             if self.cmd_is_to_be_processed(cmd, msg):
                 self.msg_queues[cmd.cmd_name].put(msg)
