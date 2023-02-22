@@ -502,7 +502,11 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
     @staticmethod
     def format_destination(destination):
         pin_url = f"https://www.google.com/maps/search/?api=1&query={destination['lat']},{destination['lng']}"
-        return f"|{destination['name']}|{','.join(destination['type'])}|[{destination['distance']}]({pin_url})|\n"
+        if "site" in destination:
+            name = f"[{destination['name']}]({destination['site']})"
+        else:
+            name = destination["name"]
+        return f"|{name}|{','.join(destination['type'])}|[{destination['distance']}]({pin_url})|\n"
 
     def process(self, msg: ZulipMsg):
         lunch_date = msg.get_arg(1)
@@ -535,6 +539,19 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
         date_obj = datetime.fromtimestamp(timestamp)
         return date_obj.strftime("%Y-%m-%d")
 
+    @staticmethod
+    def get_truck_website(slug):
+        r = requests.get(f"https://api.hellotrucks.app/1.0/companies/{slug}")
+        if r.status_code != 200:
+            raise requests.RequestException(f"Could not get truck website: {r.status_code}")
+        company = r.json()["company"]
+        if "website" in company:
+            return company["website"]
+        if "facebook":
+            return company["facebook"]
+        return ""
+
+
     def get_nearby_foodtrucks(self, lunch_date):
         params = {
             "lat": self.office_location["lat"],
@@ -551,7 +568,7 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
         else :
             r = requests.get("https://api.hellotrucks.app/1.0/slots/search", params=params)
             if r.status_code != 200:
-                raise requests.RequestException(f"Invalid response: {r.status_code}")
+                raise requests.RequestException(f"Could not get trucks: {r.status_code}")
             trucks = r.json()["items"]
             self.foodtrucks = []
             for truck in trucks:
@@ -564,6 +581,9 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
                         "lng": lng
                         }
                 truck_info["distance"] = self.get_travel_distance(self.office_location, truck_info)
+                website = self.get_truck_website(truck["slug"])
+                if website:
+                    truck_info["site"] = website
                 self.foodtrucks.append(truck_info)
             if lunch_date == date.today().strftime("%Y-%m-%d"):
                 self.dict_save(self.foodtrucks, cache_file)
