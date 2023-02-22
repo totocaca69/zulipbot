@@ -502,7 +502,7 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
     @staticmethod
     def format_destination(destination):
         pin_url = f"https://www.google.com/maps/search/?api=1&query={destination['lat']},{destination['lng']}"
-        return f"|[{destination['name']}]({pin_url})|{','.join(destination['type'])}|{destination['distance']}|\n"
+        return f"|{destination['name']}|{','.join(destination['type'])}|[{destination['distance']}]({pin_url})|\n"
 
     def process(self, msg: ZulipMsg):
         lunch_date = msg.get_arg(1)
