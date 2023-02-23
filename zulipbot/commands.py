@@ -236,12 +236,16 @@ class ZulipBotCmdAlias(ZulipBotCmdBase):
         return msg.is_valid_cmd(cmd_name_list)
 
     def create_alias(self, alias_name: str, msg: ZulipMsg):
+        recipient = msg.msg["display_recipient"]
+        if recipient not in self.aliases:
+            self.aliases[recipient] = {}
+
         if not alias_name:
             msg.reply("alias_name is empty", is_error=True)
             return
         if self.prev_cmd_msg:
             if self.prev_cmd_msg.get_arg(0) != self.cmd_name:
-                self.aliases[alias_name] = self.prev_cmd_msg.raw_content
+                self.aliases[recipient][alias_name] = self.prev_cmd_msg.raw_content
                 msg.reply(
                     f"alias {alias_name} to {self.prev_cmd_msg.raw_content}")
             else:
@@ -255,13 +259,14 @@ class ZulipBotCmdAlias(ZulipBotCmdBase):
             msg.reply("alias_name is empty", is_error=True)
             return
         m = msg.msg.copy()
-        m['content'] = self.aliases[alias_name]
-        new_msg = ZulipMsg(msg.client, msg.msg_filter, m)
+        m['content'] = self.aliases[m["display_recipient"]][alias_name]
+        new_msg = ZulipMsg(msg.client, msg.msg_filters, m)
         cmd = self.get_cmd(new_msg.get_arg(0))
         if cmd:
             cmd.process(new_msg)
 
     def process(self, msg: ZulipMsg):
+        recipient = msg.msg["display_recipient"]
         if msg.is_valid_cmd(self.cmd_name):
             alias_name = msg.get_arg(1)
             create = msg.get_option("create", False)
@@ -270,16 +275,17 @@ class ZulipBotCmdAlias(ZulipBotCmdBase):
                 self.create_alias(alias_name, msg)
                 self.dict_save(self.aliases)
             elif delete:
-                if alias_name in self.aliases:
-                    self.aliases.pop(alias_name)
+                if (recipient in self.aliases) and (alias_name in self.aliases[recipient]):
+                    self.aliases[recipient].pop(alias_name)
                     self.dict_save(self.aliases)
                     msg.reply(f"alias {alias_name} has been deleted")
-            elif alias_name in self.aliases:
+            elif (recipient in self.aliases) and (alias_name in self.aliases[recipient]):
                 self.run_alias(alias_name, msg)
             else:
                 list_str = "aliases:"
-                for alias_name in self.aliases:
-                    list_str += f"\n{alias_name:10s} {self.aliases[alias_name]}"
+                if recipient in self.aliases:
+                    for alias_name in self.aliases[recipient]:
+                        list_str += f"\n{alias_name:10s} {self.aliases[recipient][alias_name]}"
                 msg.reply(list_str)
         else:
             self.prev_cmd_msg = msg
