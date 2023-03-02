@@ -506,12 +506,15 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
         return travel["routes"][0]["legs"][0]["distance"]
 
     @staticmethod
-    def format_destination(destination):
+    def format_destination(destination, is_truck=False):
         pin_url = f"https://www.google.com/maps/search/?api=1&query={destination['lat']},{destination['lng']}"
         if "site" in destination:
             name = f"[{destination['name']}]({destination['site']})"
         else:
             name = destination["name"]
+
+        if is_truck:
+            name = f":truck: {name}"
         return f"|{name}|{','.join(destination['type'])}|[{destination['distance']}]({pin_url})|\n"
 
     def process(self, msg: ZulipMsg):
@@ -530,7 +533,7 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
                 table += self.format_destination(option)
 
             for truck in self.foodtrucks:
-                table += self.format_destination(truck)
+                table += self.format_destination(truck, True)
 
             msg.reply(table, fenced_code_block = False, with_prefix = False)
         except Exception as e:
