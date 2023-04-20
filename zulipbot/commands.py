@@ -596,3 +596,14 @@ class ZulipBotCmdLunch(ZulipBotCmdBase):
                 self.foodtrucks.append(truck_info)
             if lunch_date == date.today().strftime("%Y-%m-%d"):
                 self.dict_save(self.foodtrucks, cache_file)
+
+class ZulipBotCmdZenQuote(ZulipBotCmdBase):
+    def __init__(self):
+        super().__init__("quote", "Random zen quote from zenquotes.io")
+
+    def process(self, msg: ZulipMsg):
+            r = requests.get("https://zenquotes.io/api/random")
+            if r.status_code != 200:
+                raise requests.RequestException(f"Could not get quote: {r.status_code}")
+            content = r.json()[0]
+            msg.reply(f"{content['q']}\n-{content['a']}")
